@@ -63,8 +63,21 @@ public class SignInActivity extends AppCompatActivity implements
             if(result.isSuccess()){
                 Log.d("aad", String.valueOf(result.getSignInAccount().getDisplayName()));
                 Toast.makeText(this,result.getSignInAccount().getDisplayName(),Toast.LENGTH_SHORT).show();
+                HandleSignIn(result);
+                finish();
+            }
+            else{
+                Toast.makeText(this,"Network Error",Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void HandleSignIn(GoogleSignInResult result) {
+
+        String s = result.getSignInAccount().getDisplayName()+"-"+result.getSignInAccount().getEmail();
+        Intent i = new Intent(getApplicationContext(), MainActivity.class);
+        i.putExtra("Account Details",s);
+        startActivity(i);
     }
 
     @Override
