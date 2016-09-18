@@ -67,7 +67,7 @@ public class SignInActivity extends AppCompatActivity implements
                 finish();
             }
             else{
-                Toast.makeText(this,"Network Error",Toast.LENGTH_SHORT).show();
+                Toast.makeText(this,"Network Error -- Check your internet connection",Toast.LENGTH_SHORT).show();
             }
         }
     }

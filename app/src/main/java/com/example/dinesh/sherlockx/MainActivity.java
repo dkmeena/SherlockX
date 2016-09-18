@@ -74,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public long prev_time;
     public long curr_time;
 
+    public String fname = "";
 
 
     @Override
@@ -97,6 +98,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         }
+
+        sfile = "";
 
         //text = (TextView) findViewById(R.id.text);
         start = (Button) findViewById(R.id.start);
@@ -183,6 +186,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
 
+            // file name
+
+            Calendar c = Calendar.getInstance();
+            int hr = c.get(Calendar.HOUR);
+            int mn = c.get(Calendar.MINUTE);
+            int sec = c.get(Calendar.SECOND);
+            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
+            String strDate = mdformat.format(c.getTime());
+            fname = email + strDate+'_'+hr+'_'+mn+'_'+sec;
+             Log.d("dsda",fname);
+
+            // ------------- //
+            sfile = fname+"\n";
+
             start.setText("STOP");
             prev_time = System.currentTimeMillis();
 
@@ -208,18 +225,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             start.setText("START");
                             removeupdates();
 
-                            // write to file
-
-                                writeToFile(sfile);
+                             sendtoserver();
 
                             Toast.makeText(MainActivity.this, " Data Collection Stopped ", Toast.LENGTH_SHORT).show();
-                            sendtoserver();
+
                         }
                     })
                     .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
 
-                           dialog.cancel();
+                            dialog.cancel();
                         }
                     });
             AlertDialog alert = builder.create();
@@ -232,6 +247,68 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             syncstart();
 
         }
+    }
+
+    private void sendtoserver() {
+
+        new Thread(new Runnable() {
+            public void run() {
+
+                try{
+                    URL url = new URL("http://10.129.28.209:8080/sherlock_server/Main");
+                    URLConnection connection = url.openConnection();
+
+                    Log.d("inputString", sfile);
+
+                    connection.setDoOutput(true);
+                    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
+                    out.write(sfile);
+                    out.close();
+
+                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+                    final String returnString = in.readLine();
+
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+
+                            if (returnString.equals("Success"))
+                                Toast.makeText(getApplicationContext(), "file uploaded to server successfully", Toast.LENGTH_SHORT).show();
+                            else {
+                                Toast.makeText(getApplicationContext(), " Server error -- saving file locally ...", Toast.LENGTH_SHORT).show();
+                                writeToFile(sfile);
+                            }
+
+                        }
+                    });
+
+
+                    in.close();
+
+                    //if(returnString == "Success") fileuploadsuccess="yes";
+
+
+                }catch(Exception e)
+                {
+                    Log.d("Exception", e.toString());
+                    writeToFile(sfile);
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+
+                            Toast.makeText(getApplicationContext(), "network error -- saving file locally ... ", Toast.LENGTH_SHORT).show();
+                             writeToFile(sfile);
+                        }
+                    });
+
+
+
+                }
+
+
+
+            }
+        }).start();
+
     }
 
     private void syncstart() {
@@ -252,9 +329,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         FileInputStream fstrm = new FileInputStream(f);
 
-                        String iFileName = "ovicam_temp_vid.mp4";
-                        String lineEnd = "\r\n";
-                        String twoHyphens = "--";
+
                         String boundary = "*****";
                         String Tag="fSnd";
                         Log.e(Tag,"Starting Http File Sending to URL");
@@ -300,7 +375,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
 
-                        dos.writeBytes(twoHyphens + boundary + lineEnd);
+                       /* dos.writeBytes(twoHyphens + boundary + lineEnd);
                         dos.writeBytes("Content-Disposition: form-data; name=\"title\""+ lineEnd);
                         dos.writeBytes(lineEnd);
                         dos.writeBytes("Title");
@@ -315,6 +390,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         dos.writeBytes("Content-Disposition: form-data; name=\"uploadedfile\";filename=\"" + iFileName +"\"" + lineEnd);
                         dos.writeBytes(lineEnd);
+                        */
+
+                        dos.writeBytes(f+"\n    ");
 
                         Log.e(Tag,"Headers are written");
 
@@ -334,8 +412,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             bufferSize = Math.min(bytesAvailable,maxBufferSize);
                             bytesRead = fstrm.read(buffer, 0,bufferSize);
                         }
-                        dos.writeBytes(lineEnd);
-                        dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+                        //dos.writeBytes(lineEnd);
+                        //dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 
                         // close streams
                         fstrm.close();
@@ -358,25 +436,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
 
 
-//                    connection.setDoOutput(true);
-//                    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-//                    out.write(sfile);
-//                    out.close();
-//
-//                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-//
-//                    final String returnString = in.readLine();
-//
-//                    in.close();
-//
-//
-//                    runOnUiThread(new Runnable() {
-//                        public void run() {
-//
-//                            Toast.makeText(getApplicationContext(), returnString , Toast.LENGTH_SHORT).show();
-//
-//                        }
-//                    });
 
                 }catch(Exception e)
                 {
@@ -561,77 +620,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void sendtoserver() {
 
-        new Thread(new Runnable() {
-            public void run() {
-
-                try{
-                    URL url = new URL("http://10.129.28.209:8080/sherlock_server/Main");
-                    URLConnection connection = url.openConnection();
-
-                    Log.d("inputString", sfile);
-
-                    connection.setDoOutput(true);
-                    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-                    out.write(sfile);
-                    out.close();
-
-                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-
-                    final String returnString = in.readLine();
-
-                    in.close();
-
-
-                    runOnUiThread(new Runnable() {
-                        public void run() {
-
-                            Toast.makeText(getApplicationContext(), returnString , Toast.LENGTH_SHORT).show();
-
-                        }
-                    });
-
-                }catch(Exception e)
-                {
-                    Log.d("Exception",e.toString());
-                }
-
-            }
-        }).start();
-
-    }
 
     public boolean writeToFile(String data)  {
 
         Log.d("write :", data);
-
-        /*FileOutputStream fos = openFileOutput(email+".txt",Context.MODE_PRIVATE);
-        fos.write(data.getBytes());
-        fos.close();
-
-        String l="";
-
-        FileInputStream fin = openFileInput(email+".txt");
-        InputStreamReader in = new InputStreamReader(fin);
-        BufferedReader br = new BufferedReader(in);
-
-        String a="";
-        while(br.readLine()!=null){
-            l=l+a;
-        }
-
-        Log.d("write: ",l);
-        return true;*/
-
-        Calendar c = Calendar.getInstance();
-        int hr = c.get(Calendar.HOUR);
-        int mn = c.get(Calendar.MINUTE);
-        int sec = c.get(Calendar.SECOND);
-        SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
-        String strDate = mdformat.format(c.getTime());
-        String fname = email + strDate+'_'+hr+'_'+mn+'_'+sec;
-        Log.d("dsda",fname);
 
         try{
         Toast.makeText(getApplicationContext(), "writing to file", Toast.LENGTH_SHORT).show();
@@ -642,10 +635,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         BufferedWriter out = new BufferedWriter(fw);
         out.append(data);
         out.close();
+        Toast.makeText(this,"file successfully saved locally ",Toast.LENGTH_SHORT).show();
+
         return true;
+
         } catch (FileNotFoundException f) {
             return false;
-        } catch (Exception e) {
+        }
+
+        catch (Exception e) {
             return false;
         }
 
