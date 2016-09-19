@@ -40,6 +40,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -54,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     TextView username;
     String email;
-    TextView currdis, totdis, currtime, tottime;
+    TextView currdis, totdis, currtime, tottime, syncstatus;
     public TextView text;
     public Button start,sync;
     public int flagstrt = 0, flagstop = 0;
@@ -67,15 +68,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public TelephonyManager tm;
     public MyPhoneStateListener MyListener;
     public String sfile = "";
-    AlarmManager am;
-    Intent intent;
-    PendingIntent pendingIntent;
-    PendingIntent pIntent;
+
     public long prev_time;
     public long curr_time;
 
-    public String fname = "";
+    public long starttime;
 
+    // for calculating current journey distance
+    public long prev_currdistime;
+    public long curr_currdistime;
+    public double prev_gpslat,prev_gpslon;
+    public double curr_gpslat,curr_gpslon;
+    public int cnt=0;
+    //--------
+
+
+
+    public String fname = "";
+    public double curr_dis = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +109,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }
 
+
+
         sfile = "";
 
         //text = (TextView) findViewById(R.id.text);
@@ -107,6 +119,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         sync = (Button) findViewById(R.id.sync);
         sync.setOnClickListener(this);
+
+        syncstatus = (TextView) findViewById(R.id.sync_status);
+        File dir = getExternalFilesDir(null);
+        File file[] = dir.listFiles();
+
+        if(file.length==0){
+            syncstatus.setText( "Nothing to sync");
+        }
+        else{
+            syncstatus.setText(file.length + " files to be synced");
+        }
 
         flagstrt = 0;
         flagstop = 0;
@@ -153,6 +176,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         if (v.getId() == R.id.start && start.getText().toString() == "START") {
 
+            cnt=0;
+
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -167,9 +192,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
 
-            if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setMessage("Please Enable GPS")
+                builder.setMessage("Please Enable GPS with High Accuracy")
                         .setCancelable(true)
                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
@@ -201,7 +226,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             sfile = fname+"\n";
 
             start.setText("STOP");
-            prev_time = System.currentTimeMillis();
+
+            prev_time = System.currentTimeMillis(); // for alarm
+            prev_currdistime = prev_time; // for current distance
+
+            starttime = prev_time;
+
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
@@ -296,7 +326,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         public void run() {
 
                             Toast.makeText(getApplicationContext(), "network error -- saving file locally ... ", Toast.LENGTH_SHORT).show();
-                             writeToFile(sfile);
+                            writeToFile(sfile);
                         }
                     });
 
@@ -317,14 +347,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void run() {
 
                 try{
-                    URL url = new URL("http://10.129.28.209:8080/sherlock_server/Main");
-                    HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-
 
                     File dir = getExternalFilesDir(null);
                     File file[] = dir.listFiles();
 
+                    if(file.length==0){
+
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+
+                                Toast.makeText(getApplicationContext(), "No files to Sync", Toast.LENGTH_SHORT).show();
+
+                            }
+                        });
+                        return;
+                    }
+
+                    int i=1;
+                    final int l=file.length;
+                    final int[] x = {l};
                     for(File f : file){
+
+                        URL url = new URL("http://10.129.28.209:8080/sherlock_server/Main");
+                        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+
                         Log.d("inputString", String.valueOf(f));
 
                         FileInputStream fstrm = new FileInputStream(f);
@@ -392,9 +438,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         dos.writeBytes(lineEnd);
                         */
 
-                        dos.writeBytes(f+"\n    ");
+                        String[] fn = f.toString().split("/");
 
-                        Log.e(Tag,"Headers are written");
+                        dos.writeBytes(fn[fn.length-1].replace(".txt","")+"\n");
+
+                        Log.e(Tag, "Headers are written");
 
                         int bytesAvailable = fstrm.available();
 
@@ -425,15 +473,40 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         InputStream is = conn.getInputStream();
 
                         // retrieve the response from server
-                        int ch;
+                        /*int ch;
                         StringBuffer b =new StringBuffer();
                         while( ( ch = is.read() ) != -1 ){ b.append( (char)ch ); }
                         String s=b.toString();
-                        Log.i("Response",s);
+                        Log.i("Response",s);*/
+                        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                        final String returnString = in.readLine();
+
+                        Log.d("asdas",returnString);
+                        if(returnString.equals("Success")){
+
+                            f.delete();
+
+                            final int finalI = i;
+                            runOnUiThread(new Runnable() {
+                                public void run() {
+
+                                    x[0] = x[0] -1;
+
+                                    Toast.makeText(getApplicationContext(), finalI +" out of "+l+" files synched succesfully",Toast.LENGTH_SHORT).show();
+                                    syncstatus.setText(x[0] +" files to be synced");
+                                }
+                            });
+                            i++;
+                        }
+
+
+
                         dos.close();
 
 
                     }
+
+
 
 
 
@@ -477,6 +550,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             curr_time = System.currentTimeMillis();
 
+            currtime.setText(String.valueOf((curr_time - starttime) / 1000) + " sec");
+
             if(curr_time - prev_time >= 30000){
                 prev_time = curr_time;
                 Log.d("Alarm","Alarm");
@@ -493,7 +568,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int hr = c.get(Calendar.HOUR);
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy / MM / dd ");
+            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
             String strDate = mdformat.format(c.getTime());
 
             GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
@@ -526,7 +601,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
             Log.d("Listener", "Location changed");
 
+
+
             curr_time = System.currentTimeMillis();
+
+            currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
 
             if(curr_time - prev_time >= 30000){
                 prev_time = curr_time;
@@ -545,7 +624,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
 
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy / MM / dd ");
+            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
             String strDate = mdformat.format(c.getTime());
 
             GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
@@ -560,6 +639,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + "\n";
            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+
+            // for current journey distance //
+
+            if(cnt==0 && gpslat!=0 && gpslon!=0 ){
+                prev_gpslat = gpslat;
+                prev_gpslon = gpslon;
+                cnt=1;
+                prev_currdistime = curr_time;
+                //Toast.makeText(getApplicationContext(),"hiha",Toast.LENGTH_SHORT).show();
+            }
+
+            else if(cnt==1 && curr_time-prev_currdistime >=1000 ){
+                float[] res = new float[3];
+                //Toast.makeText(getApplicationContext(),"above if",Toast.LENGTH_SHORT).show();
+                if(gpslat != 0 && gpslon != 0){
+                    Location.distanceBetween(prev_gpslat,prev_gpslon,gpslat,gpslon,res);
+
+                   // Toast.makeText(getApplicationContext(), (int) res[0],Toast.LENGTH_SHORT).show();
+                   // Toast.makeText(getApplicationContext(),"hahaaha == "+res[0],Toast.LENGTH_SHORT).show();
+                    currdis.setText(String.valueOf(res[0]) + " KM");
+                    //currdis.setText("100 KM");
+                    prev_gpslat = gpslat;
+
+                    prev_gpslon = gpslon;
+                    prev_currdistime = curr_time;
+                   // Toast.makeText(getApplicationContext(),"inside if",Toast.LENGTH_SHORT).show();
+                }
+
+            }
+
+            // ------------------------ //
 
         }
 
@@ -583,6 +693,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
             curr_time = System.currentTimeMillis();
+
+            currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
 
             if(curr_time - prev_time >= 30000){
 
@@ -610,7 +722,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
 
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy / MM / dd ");
+            SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
             String strDate = mdformat.format(c.getTime());
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + "\n";
