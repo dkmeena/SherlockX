@@ -19,6 +19,9 @@ import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
@@ -55,6 +58,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener,SensorEventListener {
 
@@ -92,6 +96,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public SensorManager senSensorManager;
     public Sensor senAccelerometer;
     public float accx,accy,accz; // accelerometer
+
+    public WifiManager mainWifiObj;
+    public String wifiinfo = "";
     //public String mProvider = "";
     //--------
 
@@ -156,6 +163,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
 
         start.setText("START");
 
@@ -197,6 +206,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
 
 
 
@@ -281,9 +292,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             start.setText("START");
                             removeupdates();
 
-                             sendtoserver();
-
+                             //sendtoserver();
                             Toast.makeText(MainActivity.this, " Data Collection Stopped ", Toast.LENGTH_SHORT).show();
+
+
+                            writeToFile(sfile);
+                            File dir = getExternalFilesDir(null);
+                            File file[] = dir.listFiles();
+
+                            if(file.length==0){
+                                syncstatus.setText( "Nothing to sync");
+                            }
+                            else{
+                                syncstatus.setText(file.length + " files to be synced");
+                            }
+
+
 
                         }
                     })
@@ -296,6 +320,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             AlertDialog alert = builder.create();
             alert.show();
 
+            // --------------- //
+
+
+            // --------------- //
 
         }
         else if(v.getId() == R.id.sync){
@@ -335,9 +363,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
              accx = sensorEvent.values[0];
              accy = sensorEvent.values[1];
              accz = sensorEvent.values[2];
-//            Log.d("accx", String.valueOf(x));
-//            Log.d("accy", String.valueOf(y));
-//            Log.d("accz", String.valueOf(z));
+//           Log.d("accx", String.valueOf(accx));
+//            Log.d("accy", String.valueOf(accy));
+//            Log.d("accz", String.valueOf(accz));
         }
     }
 
@@ -348,7 +376,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // --------------------- //
 
-    private void sendtoserver() {
+   /* private void sendtoserver() {
 
         new Thread(new Runnable() {
             public void run() {
@@ -411,6 +439,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+       */
+
     private void syncstart() {
 
         new Thread(new Runnable() {
@@ -440,6 +470,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         URL url = new URL("http://10.129.28.209:8080/sherlock_server/Main");
                         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                        conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
 
                         Log.d("inputString", String.valueOf(f));
 
@@ -748,6 +779,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             super.onSignalStrengthsChanged(signalStrength);
             // Toast.makeText(getApplicationContext(), "signal changed" , Toast.LENGTH_SHORT).show();
             Log.d("signal", "signal changed");
+
+            // collect wifi information //
+
+            wifiinfo = "";
+            mainWifiObj.startScan();
+            List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
+            int length=wifiScanList.size();
+            for(int i = 0; i < length; i++){
+                wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+
+            }
+
+            Log.d("wifi: ",wifiinfo);
+            // -------------- //
 
 
             curr_time = System.currentTimeMillis();
