@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public double prev_gpslat,prev_gpslon;
     public double curr_gpslat,curr_gpslon;
     public int cnt=0;
-    public NmeaSentence nmea = new NmeaSentence("");
+    public NmeaSentence nmea;
     public String mPDOP= "";
     public String mHDOP= "";
     public String mVDOP= "";
@@ -164,6 +164,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        nmea = new NmeaSentence("");
 
 
         start.setText("START");
@@ -206,6 +207,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+          //  nmea = new NmeaSentence("");
+
             mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
 
@@ -272,7 +276,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListenerGPS);
 
-            // locationManagerGPS.addNmeaListener(nmeaListener);
+            locationManagerGPS.addNmeaListener(nmeaListener);
 
 
 
@@ -334,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-   /* private GpsStatus.NmeaListener nmeaListener = new GpsStatus.NmeaListener() {
+   private GpsStatus.NmeaListener nmeaListener = new GpsStatus.NmeaListener() {
         @Override
         public void onNmeaReceived(long timestamp, String nmeaSentence) {
 
@@ -342,17 +346,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if ((nmeaSentence==null || nmeaSentence.trim().length()==0 )) {
                 return;
             }
-            Toast.makeText(getApplicationContext(),nmeaSentence,Toast.LENGTH_SHORT).show();
+           // Toast.makeText(getApplicationContext(),nmeaSentence,Toast.LENGTH_SHORT).show();
             nmea.setNmeaSentence(nmeaSentence);
             if (nmea.isLocationSentence()) {
                 mPDOP = nmea.getLatestPdop().isEmpty() ? mPDOP : nmea.getLatestPdop();
                 mHDOP = nmea.getLatestHdop().isEmpty() ? mHDOP : nmea.getLatestHdop();;
                 mVDOP = nmea.getLatestVdop().isEmpty() ? mVDOP : nmea.getLatestVdop();;
-                //androidLocationUI.updateNemaUI();
+                //Toast.makeText(getApplicationContext(),mPDOP + " :: " + mHDOP + " :: " + mVDOP,Toast.LENGTH_SHORT).show();
+               // Log.d("dasda","asda");
             }
 
         }
-    };*/
+    };
 
     // sensor methods
 
@@ -619,11 +624,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if (locationManagerGPS != null) {
             locationManagerGPS.removeUpdates(locationListenerGPS);
+            locationManagerGPS.removeNmeaListener(nmeaListener);
+           // nmeaListener=null;
             locationManagerGPS = null;
+
         }
 
         if (tm != null)
             tm.listen(MyListener, PhoneStateListener.LISTEN_NONE);
+
+
 
     }
 
@@ -668,7 +678,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             netacc = Math.round(netacc * 100);
             netacc = netacc / 100.0;
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " + accx+ " || " + accy + " || " + accz +"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
         }
@@ -726,7 +736,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             gpsacc = gpsacc / 100.0;
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " + accx+ " || " + accy + " || " + accz +"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
             // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
             // for current journey distance //
@@ -829,7 +839,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String strDate = mdformat.format(c.getTime());
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " + accx+ " || " + accy + " || " + accz +"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
             // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
 
