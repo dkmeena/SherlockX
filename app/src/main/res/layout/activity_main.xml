@@ -167,9 +167,9 @@
                 android:layout_weight="1"
                 android:background="@drawable/cell_shape"
                 android:gravity="center"
-                android:text="OFF"
+                android:text="0 m/s"
                 android:layout_column="1"
-                android:id="@+id/tvGPSStatus"/>
+                android:id="@+id/gpsspeed"/>
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

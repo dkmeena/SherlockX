@@ -11,6 +11,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -51,11 +56,11 @@ import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener,SensorEventListener {
 
     TextView username;
     String email;
-    TextView currdis, totdis, currtime, tottime, syncstatus;
+    TextView currdis, totdis, currtime, tottime, syncstatus, gpsspeed;
     public TextView text;
     public Button start,sync;
     public int flagstrt = 0, flagstop = 0;
@@ -80,6 +85,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public double prev_gpslat,prev_gpslon;
     public double curr_gpslat,curr_gpslon;
     public int cnt=0;
+    public NmeaSentence nmea = new NmeaSentence("");
+    public String mPDOP= "";
+    public String mHDOP= "";
+    public String mVDOP= "";
+    public SensorManager senSensorManager;
+    public Sensor senAccelerometer;
+    public float accx,accy,accz; // accelerometer
+    //public String mProvider = "";
     //--------
 
 
@@ -121,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         sync.setOnClickListener(this);
 
         syncstatus = (TextView) findViewById(R.id.sync_status);
+        gpsspeed = (TextView) findViewById(R.id.gpsspeed);
         File dir = getExternalFilesDir(null);
         File file[] = dir.listFiles();
 
@@ -141,6 +155,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
         start.setText("START");
 
@@ -148,6 +163,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     }
+
+
 
     private void database() {
         SQLiteDatabase SherlockD = openOrCreateDatabase("Sherlock_Data", MODE_PRIVATE, null);
@@ -180,6 +197,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
 
 
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -232,11 +250,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             starttime = prev_time;
 
+            senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
+
+
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListenerGPS);
+
+            // locationManagerGPS.addNmeaListener(nmeaListener);
+
 
 
             Toast.makeText(getApplicationContext(), "Data Collection Started !!!", Toast.LENGTH_SHORT).show();
@@ -279,6 +305,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+
+   /* private GpsStatus.NmeaListener nmeaListener = new GpsStatus.NmeaListener() {
+        @Override
+        public void onNmeaReceived(long timestamp, String nmeaSentence) {
+
+            //Toast.makeText(getApplicationContext(),"HIHA",Toast.LENGTH_SHORT).show();
+            if ((nmeaSentence==null || nmeaSentence.trim().length()==0 )) {
+                return;
+            }
+            Toast.makeText(getApplicationContext(),nmeaSentence,Toast.LENGTH_SHORT).show();
+            nmea.setNmeaSentence(nmeaSentence);
+            if (nmea.isLocationSentence()) {
+                mPDOP = nmea.getLatestPdop().isEmpty() ? mPDOP : nmea.getLatestPdop();
+                mHDOP = nmea.getLatestHdop().isEmpty() ? mHDOP : nmea.getLatestHdop();;
+                mVDOP = nmea.getLatestVdop().isEmpty() ? mVDOP : nmea.getLatestVdop();;
+                //androidLocationUI.updateNemaUI();
+            }
+
+        }
+    };*/
+
+    // sensor methods
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent){
+        Sensor mySensor = sensorEvent.sensor;
+        if (mySensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+             accx = sensorEvent.values[0];
+             accy = sensorEvent.values[1];
+             accz = sensorEvent.values[2];
+//            Log.d("accx", String.valueOf(x));
+//            Log.d("accy", String.valueOf(y));
+//            Log.d("accz", String.valueOf(z));
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    // --------------------- //
+
     private void sendtoserver() {
 
         new Thread(new Runnable() {
@@ -294,6 +363,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
                     out.write(sfile);
                     out.close();
+
 
                     BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 
@@ -421,22 +491,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
 
-                       /* dos.writeBytes(twoHyphens + boundary + lineEnd);
-                        dos.writeBytes("Content-Disposition: form-data; name=\"title\""+ lineEnd);
-                        dos.writeBytes(lineEnd);
-                        dos.writeBytes("Title");
-                        dos.writeBytes(lineEnd);
-                        dos.writeBytes(twoHyphens + boundary + lineEnd);
-
-                        dos.writeBytes("Content-Disposition: form-data; name=\"description\""+ lineEnd);
-                        dos.writeBytes(lineEnd);
-                        dos.writeBytes("Description");
-                        dos.writeBytes(lineEnd);
-                        dos.writeBytes(twoHyphens + boundary + lineEnd);
-
-                        dos.writeBytes("Content-Disposition: form-data; name=\"uploadedfile\";filename=\"" + iFileName +"\"" + lineEnd);
-                        dos.writeBytes(lineEnd);
-                        */
 
                         String[] fn = f.toString().split("/");
 
@@ -521,6 +575,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void removeupdates() {
+
+        senSensorManager.unregisterListener((SensorEventListener) this);
         if (locationManagerNET != null) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
@@ -580,7 +636,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             netacc = location.getAccuracy();
             netacc = Math.round(netacc * 100);
             netacc = netacc / 100.0;
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + "\n";
+            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " + accx+ " || " + accy + " || " + accz +"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
         }
@@ -601,7 +658,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
             Log.d("Listener", "Location changed");
 
-
+            gpsspeed.setText((int) location.getSpeed() + " m/s");
 
             curr_time = System.currentTimeMillis();
 
@@ -637,8 +694,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             gpsacc = Math.round(gpsacc * 100);
             gpsacc = gpsacc / 100.0;
 
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + "\n";
-           // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " + accx+ " || " + accy + " || " + accz +"\n";
+            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
             // for current journey distance //
 
@@ -725,8 +783,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
             String strDate = mdformat.format(c.getTime());
 
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + "\n";
-           // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " + accx+ " || " + accy + " || " + accz +"\n";
+            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
 
         }
