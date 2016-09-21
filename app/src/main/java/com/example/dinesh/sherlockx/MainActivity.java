@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -62,10 +63,10 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener,SensorEventListener {
 
-    TextView username;
-    String email;
-    TextView currdis, totdis, currtime, tottime, syncstatus, gpsspeed;
-    public TextView text;
+    public TextView username;
+    public String email;
+    public TextView currdis, totdis, currtime, tottime, syncstatus, gpsspeed;
+
     public Button start,sync;
     public int flagstrt = 0, flagstop = 0;
     private LocationManager locationManagerNET;
@@ -85,9 +86,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // for calculating current journey distance
     public long prev_currdistime;
-    public long curr_currdistime;
+
     public double prev_gpslat,prev_gpslon;
-    public double curr_gpslat,curr_gpslon;
+
     public int cnt=0;
     public NmeaSentence nmea;
     public String mPDOP= "";
@@ -99,13 +100,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public WifiManager mainWifiObj;
     public String wifiinfo = "";
+
+    public int issyncgoing;
     //public String mProvider = "";
     //--------
 
 
 
     public String fname = "";
-    public double curr_dis = 0;
+    public int curr_dis = 0;
+    public int curr_currdistime = 0;
+    public String usrname="";
+    public SQLiteDatabase SherlockD;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Log.d("dsada", uname[0]);
             Log.d("dsada", uname[1]);
             username.setText(uname[0]);
+            usrname = uname[0];
             email = uname[1].replace(" ","");
             String[] a = email.split("@gmail.com");
             email = a[0];
@@ -141,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         sync.setOnClickListener(this);
 
         syncstatus = (TextView) findViewById(R.id.sync_status);
+        issyncgoing=0;
         gpsspeed = (TextView) findViewById(R.id.gpsspeed);
         File dir = getExternalFilesDir(null);
         File file[] = dir.listFiles();
@@ -160,6 +168,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         currtime = (TextView) findViewById(R.id.currtime);
         tottime = (TextView) findViewById(R.id.tottime);
 
+        createdatabase();
+
         locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -169,33 +179,50 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         start.setText("START");
 
-        database();
 
 
     }
 
+    private void createdatabase() {
 
+        SherlockD=openOrCreateDatabase("SherlockDB", Context.MODE_PRIVATE, null);
+        SherlockD.execSQL("CREATE TABLE IF NOT EXISTS Sherlock(usrname VARCHAR,email VARCHAR PRIMARY KEY,distance INTEGER, time INTEGER);");
 
-    private void database() {
-        SQLiteDatabase SherlockD = openOrCreateDatabase("Sherlock_Data", MODE_PRIVATE, null);
-        SherlockD.execSQL("CREATE TABLE IF NOT EXISTS Sherlock(Username VARCHAR, Email VARCHAR, " +
-                "currdis INTEGER DEFAULT 0, totdis INTEGER DEFAULT 0, currtime VARCHAR DEFAULT 0, totTime VARCHAR DEFAULT 0 );");
-
-
-        String q = "SELECT * FROM Sherlock DESC LIMIT 1";
-        Cursor cursor = SherlockD.rawQuery(q, null);
-
-        int tot_dis = -1;
-        String tot_time = "!";
-        if (cursor != null && cursor.getCount() > 0) {
-            cursor.moveToFirst();
-            tot_dis = cursor.getInt(cursor.getColumnIndex("totdis"));
-            tot_time = cursor.getString(cursor.getColumnIndex("tottime"));
-
+        Cursor c=SherlockD.rawQuery("SELECT * FROM Sherlock where email='"+email+"' ", null);
+        if(c.moveToFirst())
+        {
+            totdis.setText(c.getInt(2)+" M");
+            tottime.setText(c.getInt(3) + " sec");
         }
 
-        if (tot_dis != -1) totdis.setText(tot_dis + " KM");
-        if (tot_time != "!") tottime.setText(tot_time);
+    }
+
+    private void updatedatabase(){
+
+
+
+        Cursor c=SherlockD.rawQuery("SELECT * FROM Sherlock where email='"+email+"' ", null);
+        int dis = 0 ,time = 0;
+        if(c.moveToFirst())
+        {
+           dis = c.getInt(2);
+           time = c.getInt(3);
+        }
+
+        dis = dis+curr_dis;
+        time = time+curr_currdistime;
+
+        SherlockD.execSQL("INSERT OR REPLACE INTO Sherlock VALUES('"+usrname+"','"+
+                email+"','"+dis+"','"+time+"');");
+
+        c=SherlockD.rawQuery("SELECT * FROM Sherlock where email='"+email+"' ", null);
+        if(c.moveToFirst())
+        {
+            totdis.setText(c.getInt(2)+" M");
+            tottime.setText(c.getInt(3)+" sec");
+        }
+
+
 
     }
 
@@ -204,7 +231,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (v.getId() == R.id.start && start.getText().toString() == "START") {
 
             cnt=0;
-
+            currdis.setText("0 M");
+            currtime.setText("0 sec");
+            curr_dis = 0;
+            curr_currdistime = 0;
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -294,6 +324,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
                             start.setText("START");
+
                             removeupdates();
 
                              //sendtoserver();
@@ -301,6 +332,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
                             writeToFile(sfile);
+                            updatedatabase();
                             File dir = getExternalFilesDir(null);
                             File file[] = dir.listFiles();
 
@@ -330,15 +362,235 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // --------------- //
 
         }
-        else if(v.getId() == R.id.sync){
-
+        else if(v.getId() == R.id.sync && issyncgoing==0){
+            issyncgoing = 1;
             syncstart();
+
+
+        }
+        else if(v.getId() == R.id.sync && issyncgoing==1){
+
+            Toast.makeText(getApplicationContext(),"Wait for previous sync to complete",Toast.LENGTH_SHORT).show();
 
         }
     }
 
 
-   private GpsStatus.NmeaListener nmeaListener = new GpsStatus.NmeaListener() {
+    LocationListener locationListenerNET = new LocationListener() {
+        public void onLocationChanged(Location location) {
+
+            // Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
+            Log.d("Listener", "Location changed");
+
+
+            curr_time = System.currentTimeMillis();
+
+            currtime.setText(String.valueOf((curr_time - starttime) / 1000) + " sec");
+            curr_currdistime = (int) ((curr_time -starttime)/1000);
+
+            if(curr_time - prev_time >= 30000){
+                prev_time = curr_time;
+                Log.d("Alarm","Alarm");
+                PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
+                        PowerManager.SCREEN_DIM_WAKE_LOCK |
+                                PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
+
+                wakeLock.acquire();
+                wakeLock.release();
+
+            }
+
+            Calendar c = Calendar.getInstance();
+            int hr = c.get(Calendar.HOUR);
+            int mn = c.get(Calendar.MINUTE);
+            int sec = c.get(Calendar.SECOND);
+            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
+            String strDate = mdformat.format(c.getTime());
+
+            GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
+            cellid = String.valueOf(loc.getCid() & 0xffff);
+            operatorName = tm.getSimOperatorName();
+
+            netlat = location.getLatitude();
+            netlon = location.getLongitude();
+            netacc = location.getAccuracy();
+            netacc = Math.round(netacc * 100);
+            netacc = netacc / 100.0;
+            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
+            //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
+
+        public void onProviderEnabled(String provider) {
+        }
+
+        public void onProviderDisabled(String provider) {
+        }
+    };
+
+    LocationListener locationListenerGPS = new LocationListener() {
+        public void onLocationChanged(Location location) {
+
+            //Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
+            Log.d("Listener", "Location changed");
+
+            gpsspeed.setText((int) location.getSpeed() + " m/s");
+
+            curr_time = System.currentTimeMillis();
+
+            currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
+            curr_currdistime = (int) ((curr_time -starttime)/1000);
+
+            if(curr_time - prev_time >= 30000){
+                prev_time = curr_time;
+                Log.d("Alarm","Alarm");
+                PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
+                        PowerManager.SCREEN_DIM_WAKE_LOCK |
+                                PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
+
+                wakeLock.acquire();
+                wakeLock.release();
+
+            }
+
+            Calendar c = Calendar.getInstance();
+            int hr = c.get(Calendar.HOUR);
+            int mn = c.get(Calendar.MINUTE);
+            int sec = c.get(Calendar.SECOND);
+
+            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
+            String strDate = mdformat.format(c.getTime());
+
+            GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
+            cellid = String.valueOf(loc.getCid() & 0xffff);
+            operatorName = tm.getSimOperatorName();
+
+            gpslat = location.getLatitude();
+            gpslon = location.getLongitude();
+            gpsacc = location.getAccuracy();
+            gpsacc = Math.round(gpsacc * 100);
+            gpsacc = gpsacc / 100.0;
+
+            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
+            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+
+            // for current journey distance //
+
+            if(cnt==0 && gpslat!=0 && gpslon!=0 ){
+                prev_gpslat = gpslat;
+                prev_gpslon = gpslon;
+                cnt=1;
+                prev_currdistime = curr_time;
+                //Toast.makeText(getApplicationContext(),"hiha",Toast.LENGTH_SHORT).show();
+            }
+
+            else if(cnt==1 && curr_time-prev_currdistime >=10000 ){
+                float[] res = new float[3];
+                //Toast.makeText(getApplicationContext(),"above if",Toast.LENGTH_SHORT).show();
+                if(gpslat != 0 && gpslon != 0){
+                    Location.distanceBetween(prev_gpslat,prev_gpslon,gpslat,gpslon,res);
+
+                    // Toast.makeText(getApplicationContext(), (int) res[0],Toast.LENGTH_SHORT).show();
+                    // Toast.makeText(getApplicationContext(),"hahaaha == "+res[0],Toast.LENGTH_SHORT).show();
+                    curr_dis = (int) (curr_dis + res[0]);
+                    currdis.setText(String.valueOf(curr_dis) + " M");
+
+                    //currdis.setText("100 KM");
+                    prev_gpslat = gpslat;
+
+                    prev_gpslon = gpslon;
+                    prev_currdistime = curr_time;
+                    // Toast.makeText(getApplicationContext(),"inside if",Toast.LENGTH_SHORT).show();
+                }
+
+            }
+
+            // ------------------------ //
+
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
+
+        public void onProviderEnabled(String provider) {
+        }
+
+        public void onProviderDisabled(String provider) {
+        }
+    };
+
+
+    private class MyPhoneStateListener extends PhoneStateListener {
+        @Override
+        public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+            super.onSignalStrengthsChanged(signalStrength);
+            // Toast.makeText(getApplicationContext(), "signal changed" , Toast.LENGTH_SHORT).show();
+            Log.d("signal", "signal changed");
+
+            // collect wifi information //
+
+            wifiinfo = "";
+            mainWifiObj.startScan();
+            List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
+            int length=wifiScanList.size();
+            for(int i = 0; i < length; i++){
+                wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+
+            }
+
+            //Log.d("wifi: ",wifiinfo);
+            // -------------- //
+
+
+            curr_time = System.currentTimeMillis();
+
+            currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
+            curr_currdistime = (int) ((curr_time -starttime)/1000);
+
+            if(curr_time - prev_time >= 30000){
+
+                prev_time = curr_time;
+
+                Log.d("Alarm","Alarm");
+                PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
+                        PowerManager.SCREEN_DIM_WAKE_LOCK |
+                                PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
+
+                wakeLock.acquire();
+                wakeLock.release();
+
+            }
+
+            int val = -113 + 2 * signalStrength.getGsmSignalStrength();
+            rssi = val;
+            GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
+
+            cellid = String.valueOf(loc.getCid() & 0xffff);
+            operatorName = tm.getSimOperatorName();
+
+            Calendar c = Calendar.getInstance();
+            int hr = c.get(Calendar.HOUR);
+            int mn = c.get(Calendar.MINUTE);
+            int sec = c.get(Calendar.SECOND);
+
+            SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
+            String strDate = mdformat.format(c.getTime());
+
+            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
+            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+
+
+        }
+    }
+
+
+    private GpsStatus.NmeaListener nmeaListener = new GpsStatus.NmeaListener() {
         @Override
         public void onNmeaReceived(long timestamp, String nmeaSentence) {
 
@@ -457,7 +709,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     File file[] = dir.listFiles();
 
                     if(file.length==0){
-
+                        issyncgoing = 0;
                         runOnUiThread(new Runnable() {
                             public void run() {
 
@@ -528,9 +780,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
 
 
-                        String[] fn = f.toString().split("/");
+                        //String[] fn = f.toString().split("/");
 
-                        dos.writeBytes(fn[fn.length-1].replace(".txt","")+"\n");
+                       // dos.writeBytes(fn[fn.length-1].replace(".txt","")+"\n");
 
                         Log.e(Tag, "Headers are written");
 
@@ -597,12 +849,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
 
 
-
+                    issyncgoing=0;
 
 
                 }catch(Exception e)
                 {
                     Log.d("Exception",e.toString());
+                    issyncgoing=0;
                 }
 
             }
@@ -635,215 +888,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 
-    }
-
-
-    LocationListener locationListenerNET = new LocationListener() {
-        public void onLocationChanged(Location location) {
-
-            // Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
-            Log.d("Listener", "Location changed");
-
-
-            curr_time = System.currentTimeMillis();
-
-            currtime.setText(String.valueOf((curr_time - starttime) / 1000) + " sec");
-
-            if(curr_time - prev_time >= 30000){
-                prev_time = curr_time;
-                Log.d("Alarm","Alarm");
-                PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
-                        PowerManager.SCREEN_DIM_WAKE_LOCK |
-                                PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
-
-                wakeLock.acquire();
-                wakeLock.release();
-
-            }
-
-            Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
-            int mn = c.get(Calendar.MINUTE);
-            int sec = c.get(Calendar.SECOND);
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
-            String strDate = mdformat.format(c.getTime());
-
-            GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
-            cellid = String.valueOf(loc.getCid() & 0xffff);
-            operatorName = tm.getSimOperatorName();
-
-            netlat = location.getLatitude();
-            netlon = location.getLongitude();
-            netacc = location.getAccuracy();
-            netacc = Math.round(netacc * 100);
-            netacc = netacc / 100.0;
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
-            //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
-
-        }
-
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-        }
-
-        public void onProviderEnabled(String provider) {
-        }
-
-        public void onProviderDisabled(String provider) {
-        }
-    };
-
-    LocationListener locationListenerGPS = new LocationListener() {
-        public void onLocationChanged(Location location) {
-
-            //Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
-            Log.d("Listener", "Location changed");
-
-            gpsspeed.setText((int) location.getSpeed() + " m/s");
-
-            curr_time = System.currentTimeMillis();
-
-            currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
-
-            if(curr_time - prev_time >= 30000){
-                prev_time = curr_time;
-                Log.d("Alarm","Alarm");
-                PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
-                        PowerManager.SCREEN_DIM_WAKE_LOCK |
-                                PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
-
-                wakeLock.acquire();
-                wakeLock.release();
-
-            }
-
-            Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
-            int mn = c.get(Calendar.MINUTE);
-            int sec = c.get(Calendar.SECOND);
-
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
-            String strDate = mdformat.format(c.getTime());
-
-            GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
-            cellid = String.valueOf(loc.getCid() & 0xffff);
-            operatorName = tm.getSimOperatorName();
-
-            gpslat = location.getLatitude();
-            gpslon = location.getLongitude();
-            gpsacc = location.getAccuracy();
-            gpsacc = Math.round(gpsacc * 100);
-            gpsacc = gpsacc / 100.0;
-
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
-            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
-
-            // for current journey distance //
-
-            if(cnt==0 && gpslat!=0 && gpslon!=0 ){
-                prev_gpslat = gpslat;
-                prev_gpslon = gpslon;
-                cnt=1;
-                prev_currdistime = curr_time;
-                //Toast.makeText(getApplicationContext(),"hiha",Toast.LENGTH_SHORT).show();
-            }
-
-            else if(cnt==1 && curr_time-prev_currdistime >=1000 ){
-                float[] res = new float[3];
-                //Toast.makeText(getApplicationContext(),"above if",Toast.LENGTH_SHORT).show();
-                if(gpslat != 0 && gpslon != 0){
-                    Location.distanceBetween(prev_gpslat,prev_gpslon,gpslat,gpslon,res);
-
-                   // Toast.makeText(getApplicationContext(), (int) res[0],Toast.LENGTH_SHORT).show();
-                   // Toast.makeText(getApplicationContext(),"hahaaha == "+res[0],Toast.LENGTH_SHORT).show();
-                    currdis.setText(String.valueOf(res[0]) + " KM");
-                    //currdis.setText("100 KM");
-                    prev_gpslat = gpslat;
-
-                    prev_gpslon = gpslon;
-                    prev_currdistime = curr_time;
-                   // Toast.makeText(getApplicationContext(),"inside if",Toast.LENGTH_SHORT).show();
-                }
-
-            }
-
-            // ------------------------ //
-
-        }
-
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-        }
-
-        public void onProviderEnabled(String provider) {
-        }
-
-        public void onProviderDisabled(String provider) {
-        }
-    };
-
-
-    private class MyPhoneStateListener extends PhoneStateListener {
-        @Override
-        public void onSignalStrengthsChanged(SignalStrength signalStrength) {
-            super.onSignalStrengthsChanged(signalStrength);
-            // Toast.makeText(getApplicationContext(), "signal changed" , Toast.LENGTH_SHORT).show();
-            Log.d("signal", "signal changed");
-
-            // collect wifi information //
-
-            wifiinfo = "";
-            mainWifiObj.startScan();
-            List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
-            int length=wifiScanList.size();
-            for(int i = 0; i < length; i++){
-                wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
-
-            }
-
-            Log.d("wifi: ",wifiinfo);
-            // -------------- //
-
-
-            curr_time = System.currentTimeMillis();
-
-            currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
-
-            if(curr_time - prev_time >= 30000){
-
-                prev_time = curr_time;
-
-                Log.d("Alarm","Alarm");
-                PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
-                        PowerManager.SCREEN_DIM_WAKE_LOCK |
-                                PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
-
-                wakeLock.acquire();
-                wakeLock.release();
-
-            }
-
-            int val = -113 + 2 * signalStrength.getGsmSignalStrength();
-            rssi = val;
-            GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
-
-            cellid = String.valueOf(loc.getCid() & 0xffff);
-            operatorName = tm.getSimOperatorName();
-
-            Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
-            int mn = c.get(Calendar.MINUTE);
-            int sec = c.get(Calendar.SECOND);
-
-            SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
-            String strDate = mdformat.format(c.getTime());
-
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
-            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
-
-
-        }
     }
 
 

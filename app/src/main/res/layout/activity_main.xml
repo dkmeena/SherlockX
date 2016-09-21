@@ -73,7 +73,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/cell_shape"
                 android:gravity="center"
-                android:text="0 KM"
+                android:text="0 M"
                 android:layout_column="2"
                 android:id="@+id/currdis"/>
             <TextView
@@ -82,7 +82,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/cell_shape"
                 android:gravity="center"
-                android:text="0 KM"
+                android:text="0 M"
                 android:layout_column="3"
                 android:id="@+id/totdis"/>
         </TableRow>
