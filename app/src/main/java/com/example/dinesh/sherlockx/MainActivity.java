@@ -230,6 +230,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         if (v.getId() == R.id.start && start.getText().toString() == "START") {
 
+            wifiinfo = "";
             cnt=0;
             currdis.setText("0 M");
             currtime.setText("0 sec");
@@ -362,6 +363,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // --------------- //
 
         }
+
         else if(v.getId() == R.id.sync && issyncgoing==0){
             issyncgoing = 1;
             syncstart();
@@ -382,6 +384,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
             Log.d("Listener", "Location changed");
 
+            // wifi list //
+
+            mainWifiObj.startScan();
+            List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
+            int length=wifiScanList.size();
+            for(int i = 0; i < length; i++){
+                if(i==0)
+                    wifiinfo = wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                else
+                    wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+
+            }
+
+            // ---------------------- //
 
             curr_time = System.currentTimeMillis();
 
@@ -417,7 +433,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             netacc = Math.round(netacc * 100);
             netacc = netacc / 100.0;
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
         }
@@ -437,6 +453,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             //Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
             Log.d("Listener", "Location changed");
+
+            // wifi list //
+
+            mainWifiObj.startScan();
+            List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
+            int length=wifiScanList.size();
+            for(int i = 0; i < length; i++){
+                if(i==0)
+                    wifiinfo = wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                else
+                    wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+
+            }
+
+            // ---------------------- //
 
             gpsspeed.setText((int) location.getSpeed() + " m/s");
 
@@ -476,7 +507,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             gpsacc = gpsacc / 100.0;
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
             // for current journey distance //
@@ -534,16 +565,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             // collect wifi information //
 
-            wifiinfo = "";
+
             mainWifiObj.startScan();
             List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
             int length=wifiScanList.size();
             for(int i = 0; i < length; i++){
-                wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                if(i==0)
+                    wifiinfo = wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                else
+                    wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
 
             }
 
-            //Log.d("wifi: ",wifiinfo);
+            Log.d("wifi: ",wifiinfo);
             // -------------- //
 
 
@@ -582,7 +616,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String strDate = mdformat.format(c.getTime());
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
 
@@ -855,6 +889,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }catch(Exception e)
                 {
                     Log.d("Exception",e.toString());
+                    if(e.toString().contains("ConnectException")){
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "Unable to Connect -- check your internet connection", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
                     issyncgoing=0;
                 }
 
