@@ -20,6 +20,8 @@ import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Build;
@@ -63,15 +65,17 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener,SensorEventListener {
 
+
     public TextView username;
     public String email;
-    public TextView currdis, totdis, currtime, tottime, syncstatus, gpsspeed;
+    public TextView currdis, totdis, currtime, tottime, syncstatus, gpsspeed, connstatus;
 
     public Button start,sync;
     public int flagstrt = 0, flagstop = 0;
     private LocationManager locationManagerNET;
     private LocationManager locationManagerGPS;
     public double gpslat, gpslon, gpsacc, netlat, netlon, netacc;
+    public double bearing;
     public String cellid;
     public int rssi = 0;
     public String operatorName;
@@ -113,6 +117,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public String usrname="";
     public SQLiteDatabase SherlockD;
 
+    private PendingIntent pendingIntent;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -137,7 +144,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
 
-
         sfile = "";
 
         //text = (TextView) findViewById(R.id.text);
@@ -150,6 +156,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         syncstatus = (TextView) findViewById(R.id.sync_status);
         issyncgoing=0;
         gpsspeed = (TextView) findViewById(R.id.gpsspeed);
+        connstatus = (TextView) findViewById(R.id.connstatus);
+
+        checkconnection();
+
         File dir = getExternalFilesDir(null);
         File file[] = dir.listFiles();
 
@@ -182,6 +192,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     }
+
+
 
     private void createdatabase() {
 
@@ -230,12 +242,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         if (v.getId() == R.id.start && start.getText().toString() == "START") {
 
-            wifiinfo = "";
-            cnt=0;
-            currdis.setText("0 M");
-            currtime.setText("0 sec");
-            curr_dis = 0;
-            curr_currdistime = 0;
+            initialize();
+
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -377,6 +385,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private void initialize() {
+
+        wifiinfo = "";
+        cnt=0;
+        currdis.setText("0 M");
+        currtime.setText("0 sec");
+        curr_dis = 0;
+        curr_currdistime = 0;
+        gpslat=0.0; gpslon=0.0; gpsacc=0.0;
+        netlat=0.0; netlon=0.0; netacc=0.0;
+        bearing=0.0; rssi=0;
+        wifiinfo="";
+        checkconnection();
+
+    }
+
+    private void checkconnection() {
+
+        // check if internet connected //
+
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        if(activeNetworkInfo != null && activeNetworkInfo.isConnected()){
+            connstatus.setText("Connected");
+        }
+        else
+            connstatus.setText("No Internet");
+
+        // --------------  //
+    }
+
 
     LocationListener locationListenerNET = new LocationListener() {
         public void onLocationChanged(Location location) {
@@ -433,7 +473,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             netacc = Math.round(netacc * 100);
             netacc = netacc / 100.0;
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
         }
@@ -454,8 +494,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             //Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
             Log.d("Listener", "Location changed");
 
-            // wifi list //
+            bearing = location.getBearing();
 
+            // wifi list //
             mainWifiObj.startScan();
             List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
             int length=wifiScanList.size();
@@ -507,7 +548,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             gpsacc = gpsacc / 100.0;
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
             // for current journey distance //
@@ -616,7 +657,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             String strDate = mdformat.format(c.getTime());
 
             sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
 
 
