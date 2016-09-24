@@ -607,6 +607,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // collect wifi information //
 
 
+            if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setMessage("GPS setting changed -- Please Enable GPS with High Accuracy and start again")
+                        .setCancelable(true)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+
+                            }
+                        });
+
+
+                AlertDialog alert = builder.create();
+                alert.show();
+
+                start.setText("START");
+
+                removeupdates();
+
+                //sendtoserver();
+                Toast.makeText(MainActivity.this, " Data Collection Stopped ", Toast.LENGTH_SHORT).show();
+
+
+                writeToFile(sfile);
+                updatedatabase();
+                File dir = getExternalFilesDir(null);
+                File file[] = dir.listFiles();
+
+                if(file.length==0){
+                    syncstatus.setText( "Nothing to sync");
+                }
+                else{
+                    syncstatus.setText(file.length + " files to be synced");
+                }
+
+
+                return;
+
+            }
+
+
             mainWifiObj.startScan();
             List<ScanResult> wifiScanList = mainWifiObj.getScanResults();
             int length=wifiScanList.size();
@@ -695,6 +736,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
              accx = sensorEvent.values[0];
              accy = sensorEvent.values[1];
              accz = sensorEvent.values[2];
+            Calendar c = Calendar.getInstance();
+            int hr = c.get(Calendar.HOUR);
+            int mn = c.get(Calendar.MINUTE);
+            int sec = c.get(Calendar.SECOND);
+
+            SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
+            String strDate = mdformat.format(c.getTime());
+
+            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
+
 //           Log.d("accx", String.valueOf(accx));
 //            Log.d("accy", String.valueOf(accy));
 //            Log.d("accz", String.valueOf(accz));
