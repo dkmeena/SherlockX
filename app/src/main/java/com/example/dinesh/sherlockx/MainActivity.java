@@ -117,6 +117,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public String usrname="";
     public SQLiteDatabase SherlockD;
 
+    // for acceleration //
+    public int acc_cnt=0;
+    public long acc_time;
+    // ----------------//
+
     private PendingIntent pendingIntent;
 
 
@@ -292,7 +297,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
             String strDate = mdformat.format(c.getTime());
             fname = email + strDate+'_'+hr+'_'+mn+'_'+sec;
-             Log.d("dsda",fname);
+             Log.d("dsda", fname);
 
             // ------------- //
             sfile = fname+"\n";
@@ -306,9 +311,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
-
-
+            //senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
@@ -387,6 +390,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initialize() {
 
+        acc_cnt=0;
         wifiinfo = "";
         cnt=0;
         currdis.setText("0 M");
@@ -397,6 +401,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         netlat=0.0; netlon=0.0; netacc=0.0;
         bearing=0.0; rssi=0;
         wifiinfo="";
+        accx = 0; accy=0; accz=0;
         checkconnection();
 
     }
@@ -510,9 +515,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             // ---------------------- //
 
-            gpsspeed.setText((int) location.getSpeed() + " m/s");
 
             curr_time = System.currentTimeMillis();
+
+            // for acceleration //
+
+            float spd = location.getSpeed();
+            gpsspeed.setText((int) spd + " m/s");
+            if(senSensorManager!=null && spd>=4 && acc_cnt==0){
+                acc_cnt =1;
+                acc_time = curr_time;
+                Log.d("fdf","hiha");
+                senSensorManager.registerListener((SensorEventListener) getApplicationContext(), senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
+            }
+
+            else {
+                if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5 * 60 * 1000)) {
+
+                    Log.d("fdf","haha");
+                    senSensorManager.unregisterListener((SensorEventListener) getApplicationContext(),senAccelerometer);
+                    senSensorManager=null;
+
+                }
+            }
+
+            // ------------------ //
 
             currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
             curr_currdistime = (int) ((curr_time -starttime)/1000);
@@ -606,6 +633,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             // collect wifi information //
 
+            curr_time = System.currentTimeMillis();
+
+            if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5 * 60 * 1000)) {
+
+                Log.d("fdf","haha");
+                senSensorManager.unregisterListener((SensorEventListener) getApplicationContext(),senAccelerometer);
+                senSensorManager=null;
+
+            }
+
 
             if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
 
@@ -661,9 +698,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             Log.d("wifi: ",wifiinfo);
             // -------------- //
-
-
-            curr_time = System.currentTimeMillis();
 
             currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
             curr_currdistime = (int) ((curr_time -starttime)/1000);
@@ -998,8 +1032,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void removeupdates() {
-
-        senSensorManager.unregisterListener((SensorEventListener) this);
+        if(senSensorManager!=null) {
+            senSensorManager.unregisterListener((SensorEventListener) this);
+            senSensorManager = null;
+        }
         if (locationManagerNET != null) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
