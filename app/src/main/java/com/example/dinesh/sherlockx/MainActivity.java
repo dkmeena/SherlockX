@@ -62,6 +62,8 @@ import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener,SensorEventListener {
 
@@ -122,8 +124,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public long acc_time;
     // ----------------//
 
-    private PendingIntent pendingIntent;
-
+    public BufferedWriter bufferedWriter;
+    public FileOutputStream fos;
+    public ZipOutputStream zos;
+    public ZipEntry ze;
+    public byte[] buffer = new byte[1024];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -300,7 +305,43 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
              Log.d("dsda", fname);
 
             // ------------- //
-            sfile = fname+"\n";
+            //sfile = fname+"\n";
+
+            // creeting data file //
+
+           /* try {
+                file = new File(getExternalFilesDir(null).toString());
+                file.mkdirs();
+                f = new File(file, fname + ".txt");
+                fw = new FileWriter(f, true);
+                bufferedWriter= new BufferedWriter(fw);
+                bufferedWriter.write(fname+"\n");
+            }
+            catch (IOException e){
+                e.printStackTrace();
+                return;
+            }
+            */
+            String zipfilename = fname+".zip";
+            File file = new File(getExternalFilesDir(null).toString());
+            file.mkdirs();
+            File f = new File(file, fname + ".txt");
+            File f1 = new File(file,zipfilename);
+            try {
+                Log.d("asa",f1.getCanonicalPath());
+                Log.d("asas",f.getName());
+                fos = new FileOutputStream(f1.getCanonicalPath());
+                zos = new ZipOutputStream(fos);
+                ze = new ZipEntry(f.getName());
+                zos.putNextEntry(ze);
+                Log.d("sda","adsads");
+
+            }
+            catch (IOException e){
+                e.printStackTrace();
+
+            }
+            // ------------------------------------------- //
 
             start.setText("STOP");
 
@@ -343,7 +384,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             Toast.makeText(MainActivity.this, " Data Collection Stopped ", Toast.LENGTH_SHORT).show();
 
 
-                            writeToFile(sfile);
+                            writeToFile();
                             updatedatabase();
                             File dir = getExternalFilesDir(null);
                             File file[] = dir.listFiles();
@@ -477,10 +518,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             netacc = location.getAccuracy();
             netacc = Math.round(netacc * 100);
             netacc = netacc / 100.0;
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
                     " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
-
+            try {
+                //bufferedWriter.write(sfile);
+                zos.write(sfile.getBytes());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -522,18 +568,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             float spd = location.getSpeed();
             gpsspeed.setText((int) spd + " m/s");
-            if(senSensorManager!=null && spd>=4 && acc_cnt==0){
+            if(senSensorManager!=null && spd>=1 && acc_cnt==0){
                 acc_cnt =1;
                 acc_time = curr_time;
                 Log.d("fdf","hiha");
-                senSensorManager.registerListener((SensorEventListener) getApplicationContext(), senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
+                senSensorManager.registerListener(MainActivity.this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
             }
 
             else {
                 if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5 * 60 * 1000)) {
 
                     Log.d("fdf","haha");
-                    senSensorManager.unregisterListener((SensorEventListener) getApplicationContext(),senAccelerometer);
+                    senSensorManager.unregisterListener(MainActivity.this,senAccelerometer);
                     senSensorManager=null;
 
                 }
@@ -574,10 +620,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             gpsacc = Math.round(gpsacc * 100);
             gpsacc = gpsacc / 100.0;
 
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
                     " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
-            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
-
+            //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+            try {
+                //bufferedWriter.write(sfile);
+                zos.write(sfile.getBytes());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             // for current journey distance //
 
             if(cnt==0 && gpslat!=0 && gpslon!=0 ){
@@ -635,10 +686,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             curr_time = System.currentTimeMillis();
 
-            if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5 * 60 * 1000)) {
+            if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5*60 * 1000)) {
 
                 Log.d("fdf","haha");
-                senSensorManager.unregisterListener((SensorEventListener) getApplicationContext(),senAccelerometer);
+                senSensorManager.unregisterListener(MainActivity.this,senAccelerometer);
                 senSensorManager=null;
 
             }
@@ -667,7 +718,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(MainActivity.this, " Data Collection Stopped ", Toast.LENGTH_SHORT).show();
 
 
-                writeToFile(sfile);
+                writeToFile();
                 updatedatabase();
                 File dir = getExternalFilesDir(null);
                 File file[] = dir.listFiles();
@@ -731,10 +782,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
             String strDate = mdformat.format(c.getTime());
 
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
                     " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
-            // text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
-
+            //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+            try {
+                //bufferedWriter.write(sfile);
+                zos.write(sfile.getBytes());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
         }
     }
@@ -1062,32 +1118,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
 
-    public boolean writeToFile(String data)  {
+    public boolean writeToFile()  {
 
-        Log.d("write :", data);
+        //Log.d("write :", data);
 
-        try{
-        Toast.makeText(getApplicationContext(), "writing to file", Toast.LENGTH_SHORT).show();
-        File file = new File(getExternalFilesDir(null).toString());
-        file.mkdirs();
-        File f = new File(file,fname + ".txt");
-        FileWriter fw = new FileWriter(f, true);
-        BufferedWriter out = new BufferedWriter(fw);
-        out.append(data);
-        out.close();
-        Toast.makeText(this,"file successfully saved locally ",Toast.LENGTH_SHORT).show();
-
-        return true;
-
-        } catch (FileNotFoundException f) {
+        try {
+            //bufferedWriter.close();
+            zos.closeEntry();
+            zos.close();
+            fos.close();
+            Toast.makeText(this,"file successfully saved locally ",Toast.LENGTH_SHORT).show();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
             return false;
         }
 
-        catch (Exception e) {
-            return false;
-        }
+
 
     }
+
+
 
 
     @Override
