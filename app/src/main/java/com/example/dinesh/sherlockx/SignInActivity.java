@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.format.DateUtils;
@@ -39,6 +40,22 @@ public class SignInActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_sign_in);
 
         // for Notifications //
+
+        SharedPreferences details = getSharedPreferences("details",MODE_PRIVATE);
+        Log.d("asas", String.valueOf(details));
+       /* if(!details.contains("islogged")){
+
+
+
+
+        }
+        else{
+
+            Intent i = new Intent(getApplicationContext(), MainActivity.class);
+            startActivity(i);
+            finish();
+
+        }*/
 
         Calendar cal1 = Calendar.getInstance();
 

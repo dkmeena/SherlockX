@@ -309,6 +309,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             // creeting data file //
 
+           // saving file using buffered writer
            /* try {
                 file = new File(getExternalFilesDir(null).toString());
                 file.mkdirs();
@@ -322,6 +323,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return;
             }
             */
+
+            // saving file directly to zip //
             String zipfilename = fname+".zip";
             File file = new File(getExternalFilesDir(null).toString());
             file.mkdirs();
@@ -352,7 +355,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            //senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
+            senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
@@ -564,11 +567,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             curr_time = System.currentTimeMillis();
 
-            // for acceleration //
 
             float spd = location.getSpeed();
             gpsspeed.setText((int) spd + " m/s");
-            if(senSensorManager!=null && spd>=1 && acc_cnt==0){
+
+            // for acceleration //
+
+           /* if(senSensorManager!=null && spd>=1 && acc_cnt==0){
                 acc_cnt =1;
                 acc_time = curr_time;
                 Log.d("fdf","hiha");
@@ -584,6 +589,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 }
             }
+
+            */
 
             // ------------------ //
 
@@ -686,13 +693,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             curr_time = System.currentTimeMillis();
 
+            // Accelerometer //
+            /*
             if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5*60 * 1000)) {
 
                 Log.d("fdf","haha");
                 senSensorManager.unregisterListener(MainActivity.this,senAccelerometer);
                 senSensorManager=null;
 
-            }
+            }*/
 
 
             if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
@@ -834,12 +843,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
             String strDate = mdformat.format(c.getTime());
 
-            sfile = sfile + strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
                     " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
 
-//           Log.d("accx", String.valueOf(accx));
-//            Log.d("accy", String.valueOf(accy));
+           Log.d("accx", String.valueOf(accx)+" "+String.valueOf(accy)+" "+String.valueOf(accz));
+//            Log.d("accy",String.valueof(accy) );
 //            Log.d("accz", String.valueOf(accz));
+            try {
+                //bufferedWriter.write(sfile);
+                zos.write(sfile.getBytes());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -972,14 +987,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         conn.setRequestProperty("Connection", "Keep-Alive");
 
-                        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);Log.e(Tag,"Starting Http File Sending to URL");
+                        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
+                        Log.e(Tag,"Starting Http File Sending to URL");
 
                         // Open a HTTP connection to the URL
                         //HttpURLConnection conn = (HttpURLConnection)connectURL.openConnection();
 
 
                         // Allow Inputs
-                        conn.setDoInput(true);
+                        /* conn.setDoInput(true);
 
                         // Allow Outputs
                         conn.setDoOutput(true);
@@ -992,7 +1008,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         conn.setRequestProperty("Connection", "Keep-Alive");
 
-                        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary); */
 
                         DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
 
