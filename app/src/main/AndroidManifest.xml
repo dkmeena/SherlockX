@@ -30,6 +30,7 @@
         </activity>
 
         <activity android:name=".MainActivity"></activity>
+        <activity android:name=".SignIn"></activity>
 
         <receiver android:name=".NotificationReceiver">
             <intent-filter>

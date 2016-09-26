@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -136,7 +137,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         username = (TextView) findViewById(R.id.username);
-        Bundle extras = getIntent().getExtras();
+
+       /* Bundle extras = getIntent().getExtras();
         if (extras != null) {
 
             String value = extras.getString("Account Details");
@@ -151,7 +153,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             email = a[0];
 
 
+        }*/
+
+        SharedPreferences details = getSharedPreferences("details",MODE_PRIVATE);
+        if(details.contains("islogged")&&details.contains("name")&&details.contains("email")){
+            username.setText(details.getString("name","Error"));
+            email = details.getString("email","Error");
+            email = email.split("@gmail.com")[0];
         }
+        else return;
 
 
         sfile = "";
