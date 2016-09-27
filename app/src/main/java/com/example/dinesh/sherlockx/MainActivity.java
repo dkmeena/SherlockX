@@ -60,9 +60,12 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -122,13 +125,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // for acceleration //
     public int acc_cnt=0;
-    public long acc_time;
+
     // ----------------//
 
     public BufferedWriter bufferedWriter;
     public FileOutputStream fos;
     public ZipOutputStream zos;
     public ZipEntry ze;
+    public FileOutputStream fos1;
+    public ZipOutputStream zos1;
+    public ZipEntry ze1;
     public byte[] buffer = new byte[1024];
 
     @Override
@@ -340,6 +346,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             file.mkdirs();
             File f = new File(file, fname + ".txt");
             File f1 = new File(file,zipfilename);
+            zipfilename = fname+"_acc.zip";
+            File f2 = new File(file, fname + "_acc.txt");
+            File f22 = new File(file,zipfilename);
             try {
                 Log.d("asa",f1.getCanonicalPath());
                 Log.d("asas",f.getName());
@@ -347,6 +356,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zos = new ZipOutputStream(fos);
                 ze = new ZipEntry(f.getName());
                 zos.putNextEntry(ze);
+                fos1 = new FileOutputStream(f22.getCanonicalPath());
+                zos1 = new ZipOutputStream(fos1);
+                ze1 = new ZipEntry(f2.getName());
+                zos1.putNextEntry(ze1);
                 Log.d("sda","adsads");
 
             }
@@ -365,7 +378,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
+            senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_FASTEST);
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
@@ -677,6 +690,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
 
+
+
+
             // ------------------------ //
 
         }
@@ -698,6 +714,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             super.onSignalStrengthsChanged(signalStrength);
             // Toast.makeText(getApplicationContext(), "signal changed" , Toast.LENGTH_SHORT).show();
             Log.d("signal", "signal changed");
+
 
             // collect wifi information //
 
@@ -853,15 +870,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
             String strDate = mdformat.format(c.getTime());
 
-            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
+            String acc_s = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + accx+ " || " + accy + " || " + accz +"\n";
 
-           Log.d("accx", String.valueOf(accx)+" "+String.valueOf(accy)+" "+String.valueOf(accz));
+           //Log.d("accx", String.valueOf(accx)+" "+String.valueOf(accy)+" "+String.valueOf(accz));
 //            Log.d("accy",String.valueof(accy) );
 //            Log.d("accz", String.valueOf(accz));
             try {
                 //bufferedWriter.write(sfile);
-                zos.write(sfile.getBytes());
+                zos1.write(acc_s.getBytes());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -940,7 +956,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
        */
 
-    private void syncstart() {
+   /* private void syncstart() {
 
         new Thread(new Runnable() {
             public void run() {
@@ -1000,32 +1016,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         conn.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
                         Log.e(Tag,"Starting Http File Sending to URL");
 
-                        // Open a HTTP connection to the URL
-                        //HttpURLConnection conn = (HttpURLConnection)connectURL.openConnection();
 
-
-                        // Allow Inputs
-                        /* conn.setDoInput(true);
-
-                        // Allow Outputs
-                        conn.setDoOutput(true);
-
-                        // Don't use a cached copy.
-                        conn.setUseCaches(false);
-
-                        // Use a post method.
-                        conn.setRequestMethod("POST");
-
-                        conn.setRequestProperty("Connection", "Keep-Alive");
-
-                        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary); */
 
                         DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
 
 
-                        //String[] fn = f.toString().split("/");
-
-                       // dos.writeBytes(fn[fn.length-1].replace(".txt","")+"\n");
 
                         Log.e(Tag, "Headers are written");
 
@@ -1045,10 +1040,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             bufferSize = Math.min(bytesAvailable,maxBufferSize);
                             bytesRead = fstrm.read(buffer, 0,bufferSize);
                         }
-                        //dos.writeBytes(lineEnd);
-                        //dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 
-                        // close streams
                         fstrm.close();
 
                         dos.flush();
@@ -1057,12 +1049,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         InputStream is = conn.getInputStream();
 
-                        // retrieve the response from server
-                        /*int ch;
-                        StringBuffer b =new StringBuffer();
-                        while( ( ch = is.read() ) != -1 ){ b.append( (char)ch ); }
-                        String s=b.toString();
-                        Log.i("Response",s);*/
                         BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                         final String returnString = in.readLine();
 
@@ -1092,6 +1078,146 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
 
 
+                    issyncgoing=0;
+
+
+                }catch(Exception e)
+                {
+                    Log.d("Exception",e.toString());
+                    if(e.toString().contains("ConnectException")){
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "Unable to Connect -- check your internet connection", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                    issyncgoing=0;
+                }
+
+            }
+        }).start();
+
+    }
+
+   */
+
+    private void syncstart() {
+
+        new Thread(new Runnable() {
+            public void run() {
+
+                try{
+
+                    File dir = getExternalFilesDir(null);
+                    File file[] = dir.listFiles();
+
+                    if(file.length==0){
+                        issyncgoing = 0;
+                        runOnUiThread(new Runnable() {
+                            public void run() {
+
+                                Toast.makeText(getApplicationContext(), "No files to Sync", Toast.LENGTH_SHORT).show();
+
+                            }
+                        });
+                        return;
+                    }
+
+                   // String postReceiverUrl = "http://10.129.28.209/receivefiles.php";
+
+                    int i=1;
+                    final int l=file.length;
+                    final int[] x = {l};
+                    String lineEnd = "\r\n";
+                    String twoHyphens = "--";
+                    String boundary = "*****";
+
+                   for(File f : file) {
+
+
+                       FileInputStream fileInputStream = new FileInputStream(f);
+                       URL url = new URL("http://10.129.28.209/sherlock_server/filereceiver.php");
+                       HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                       conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
+
+                       conn.setDoInput(true); // Allow Inputs
+                       conn.setDoOutput(true); // Allow Outputs
+                       conn.setUseCaches(false); // Don't use a Cached Copy
+                       conn.setRequestMethod("POST");
+                       conn.setRequestProperty("Connection", "Keep-Alive");
+                       conn.setRequestProperty("ENCTYPE", "multipart/form-data");
+                       conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+                       conn.setRequestProperty("uploaded_file", f.getName());
+
+                       DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+
+                       dos.writeBytes(twoHyphens + boundary + lineEnd);
+                       dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\";filename=\""+ f.getName() + "\"" + lineEnd);
+
+                       dos.writeBytes(lineEnd);
+
+// create a buffer of maximum size
+                       int bytesAvailable = fileInputStream.available();
+
+                       int bufferSize = Math.min(bytesAvailable, 1024);
+                       byte[] buffer = new byte[bufferSize];
+
+// read file and write it into form...
+                       int bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                       while (bytesRead > 0) {
+
+                           dos.write(buffer, 0, bufferSize);
+                           bytesAvailable = fileInputStream.available();
+                           bufferSize = Math.min(bytesAvailable, 1024);
+                           bytesRead = fileInputStream.read(buffer, 0, bufferSize);
+
+                       }
+
+// send multipart form data necesssary after file data...
+                       dos.writeBytes(lineEnd);
+
+                       dos.writeBytes(twoHyphens + boundary + lineEnd);
+                       dos.writeBytes("Content-Disposition: form-data; name=\"user\"" + lineEnd);
+
+                       dos.writeBytes(lineEnd);
+
+                       //dos.writeBytes(this_number);
+
+                       dos.writeBytes(lineEnd);
+
+                       dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+// Responses from the server (code and message)
+                       int serverResponseCode = conn.getResponseCode();
+                       String serverResponseMessage = conn.getResponseMessage();
+
+                       Log.i("uploadFile", "HTTP Response is : "
+                               + serverResponseMessage + ": " + serverResponseCode);
+
+
+                       BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                       final String returnString = in.readLine();
+
+                       Log.d("asdas",returnString);
+                       if(returnString.equals("Success")){
+
+                           f.delete();
+
+                           final int finalI = i;
+                           runOnUiThread(new Runnable() {
+                               public void run() {
+
+                                   x[0] = x[0] -1;
+
+                                   Toast.makeText(getApplicationContext(), finalI +" out of "+l+" files synched succesfully",Toast.LENGTH_SHORT).show();
+                                   syncstatus.setText(x[0] +" files to be synced");
+                               }
+                           });
+                           i++;
+                       }
+
+                   }
                     issyncgoing=0;
 
 
@@ -1153,6 +1279,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zos.closeEntry();
             zos.close();
             fos.close();
+            zos1.closeEntry();
+            zos1.close();
+            fos1.close();
             Toast.makeText(this,"file successfully saved locally ",Toast.LENGTH_SHORT).show();
             return true;
         } catch (IOException e) {
