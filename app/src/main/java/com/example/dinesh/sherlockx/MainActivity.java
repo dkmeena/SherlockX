@@ -312,12 +312,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // file name
 
             Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
+            int hr = c.get(Calendar.HOUR_OF_DAY);
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
             SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
             String strDate = mdformat.format(c.getTime());
-            fname = email + strDate+'_'+hr+'_'+mn+'_'+sec;
+            fname = email +'@'+ strDate+'-'+hr+'_'+mn+'_'+sec;
              Log.d("dsda", fname);
 
             // ------------- //
@@ -529,11 +529,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
+            int hr = c.get(Calendar.HOUR_OF_DAY);
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
-            String strDate = mdformat.format(c.getTime());
 
             GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
             cellid = String.valueOf(loc.getCid() & 0xffff);
@@ -544,7 +542,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             netacc = location.getAccuracy();
             netacc = Math.round(netacc * 100);
             netacc = netacc / 100.0;
-            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+            sfile =  hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
                     " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
             try {
@@ -633,12 +631,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
+            int hr = c.get(Calendar.HOUR_OF_DAY);
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
 
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy/MM/dd");
-            String strDate = mdformat.format(c.getTime());
 
             GsmCellLocation loc = (GsmCellLocation) tm.getCellLocation();
             cellid = String.valueOf(loc.getCid() & 0xffff);
@@ -650,7 +646,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             gpsacc = Math.round(gpsacc * 100);
             gpsacc = gpsacc / 100.0;
 
-            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+            sfile = hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
                     " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
             try {
@@ -811,14 +807,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             operatorName = tm.getSimOperatorName();
 
             Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
+            int hr = c.get(Calendar.HOUR_OF_DAY);
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
 
-            SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
-            String strDate = mdformat.format(c.getTime());
-
-            sfile = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+            sfile = hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
                     " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
             //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
             try {
@@ -863,14 +856,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
              accy = sensorEvent.values[1];
              accz = sensorEvent.values[2];
             Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR);
+            int hr = c.get(Calendar.HOUR_OF_DAY);
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
 
-            SimpleDateFormat mdformat =new SimpleDateFormat("yyyy/MM/dd");
-            String strDate = mdformat.format(c.getTime());
-
-            String acc_s = strDate + " || " + hr + "::" + mn + "::" + sec + " || " + accx+ " || " + accy + " || " + accz +"\n";
+            String acc_s = hr + "::" + mn + "::" + sec + " || " + accx+ " || " + accy + " || " + accz +"\n";
 
            //Log.d("accx", String.valueOf(accx)+" "+String.valueOf(accy)+" "+String.valueOf(accz));
 //            Log.d("accy",String.valueof(accy) );
@@ -1123,7 +1113,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         return;
                     }
 
-                   // String postReceiverUrl = "http://10.129.28.209/receivefiles.php";
+
+
+                    // client-server time sync //
+
+                    URL url = new URL("http://10.129.28.209/sherlock_server/filereceiver.php");
+                    HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                    conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
+
+
+                    // ----------------------- //
 
                     int i=1;
                     final int l=file.length;
@@ -1136,8 +1135,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
                        FileInputStream fileInputStream = new FileInputStream(f);
-                       URL url = new URL("http://10.129.28.209/sherlock_server/filereceiver.php");
-                       HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                       url = new URL("http://10.129.28.209/sherlock_server/filereceiver.php");
+                       conn = (HttpURLConnection)url.openConnection();
                        conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
 
                        conn.setDoInput(true); // Allow Inputs
@@ -1150,6 +1149,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                        conn.setRequestProperty("uploaded_file", f.getName());
 
                        DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+
+                       dos.writeBytes(twoHyphens + boundary + lineEnd);  // new form to send
+                       dos.writeBytes("Content-Disposition: form-data; name=\"client_time\"" + lineEnd);
+
+                       dos.writeBytes(lineEnd);
+
+                       Calendar c = Calendar.getInstance();
+                       int hr = c.get(Calendar.HOUR_OF_DAY);
+                       int mn = c.get(Calendar.MINUTE);
+                       int sec = c.get(Calendar.SECOND);
+                       SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
+                       String strDate = mdformat.format(c.getTime());
+
+                       dos.writeBytes(strDate+"-"+hr+"_"+mn+"_"+sec);
+
+                       dos.writeBytes(lineEnd); // above form ends here
 
                        dos.writeBytes(twoHyphens + boundary + lineEnd);
                        dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\";filename=\""+ f.getName() + "\"" + lineEnd);
@@ -1175,15 +1190,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                        }
 
 // send multipart form data necesssary after file data...
-                       dos.writeBytes(lineEnd);
-
-                       dos.writeBytes(twoHyphens + boundary + lineEnd);
-                       dos.writeBytes("Content-Disposition: form-data; name=\"user\"" + lineEnd);
-
-                       dos.writeBytes(lineEnd);
-
-                       //dos.writeBytes(this_number);
-
                        dos.writeBytes(lineEnd);
 
                        dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);

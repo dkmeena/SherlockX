@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.TelephonyManager;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
@@ -80,13 +81,15 @@ public class SignIn extends AppCompatActivity implements
     }
 
     private void HandleSignIn(GoogleSignInResult result) {
-
+        TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+        String ph_number = tm.getLine1Number();
         SharedPreferences details = getSharedPreferences("details", MODE_PRIVATE);
         SharedPreferences.Editor edit = details.edit();
         edit.clear();
         edit.putBoolean("islogged",true);
         edit.putString("name", result.getSignInAccount().getDisplayName());
         edit.putString("email",result.getSignInAccount().getEmail());
+        edit.putString("phone",ph_number);
         edit.commit();
         Intent i = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(i);
