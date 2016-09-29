@@ -266,7 +266,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.start && start.getText().toString() == "START") {
+        if (v.getId() == R.id.start && start.getText().toString() == "START" && issyncgoing==0) {
 
             initialize();
 
@@ -396,13 +396,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             tm.listen(MyListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
 
 
-        } else if (v.getId() == R.id.start && start.getText().toString() == "STOP") {
+        } else if (v.getId() == R.id.start && start.getText().toString() == "STOP" ) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage(" Are you sure you want to STOP ?")
                     .setCancelable(true)
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            start.setText("START");
+
 
                             removeupdates();
 
@@ -412,6 +412,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                             writeToFile();
                             updatedatabase();
+
+                            start.setText("START");
+
                             File dir = getExternalFilesDir(null);
                             File file[] = dir.listFiles();
 
@@ -442,10 +445,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }
 
-        else if(v.getId() == R.id.sync && issyncgoing==0){
+        else if (v.getId() == R.id.start && start.getText().toString() == "START" && issyncgoing==1){
+            Toast.makeText(getApplicationContext(),"Wait for sync to complete",Toast.LENGTH_SHORT).show();
+        }
+        else if(v.getId() == R.id.sync && start.getText().toString()=="STOP"){
+            Toast.makeText(getApplicationContext()," Stop the trip first ",Toast.LENGTH_SHORT).show();
+        }
+        else if(v.getId() == R.id.sync && issyncgoing==0 && start.getText().toString()=="START"){
             issyncgoing = 1;
-            syncstart();
 
+            syncstart();
 
         }
         else if(v.getId() == R.id.sync && issyncgoing==1){
@@ -879,217 +888,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    // --------------------- //
 
-   /* private void sendtoserver() {
-
-        new Thread(new Runnable() {
-            public void run() {
-
-                try{
-                    URL url = new URL("http://10.129.28.209:8080/sherlock_server/Main");
-                    URLConnection connection = url.openConnection();
-
-                    Log.d("inputString", sfile);
-
-                    connection.setDoOutput(true);
-                    OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream());
-                    out.write(sfile);
-                    out.close();
-
-
-                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-
-                    final String returnString = in.readLine();
-
-                    runOnUiThread(new Runnable() {
-                        public void run() {
-
-                            if (returnString.equals("Success"))
-                                Toast.makeText(getApplicationContext(), "file uploaded to server successfully", Toast.LENGTH_SHORT).show();
-                            else {
-                                Toast.makeText(getApplicationContext(), " Server error -- saving file locally ...", Toast.LENGTH_SHORT).show();
-                                writeToFile(sfile);
-                            }
-
-                        }
-                    });
-
-
-                    in.close();
-
-                    //if(returnString == "Success") fileuploadsuccess="yes";
-
-
-                }catch(Exception e)
-                {
-                    Log.d("Exception", e.toString());
-                    writeToFile(sfile);
-                    runOnUiThread(new Runnable() {
-                        public void run() {
-
-                            Toast.makeText(getApplicationContext(), "network error -- saving file locally ... ", Toast.LENGTH_SHORT).show();
-                            writeToFile(sfile);
-                        }
-                    });
-
-
-
-                }
-
-
-
-            }
-        }).start();
-
-    }
-
-       */
-
-   /* private void syncstart() {
-
-        new Thread(new Runnable() {
-            public void run() {
-
-                try{
-
-                    File dir = getExternalFilesDir(null);
-                    File file[] = dir.listFiles();
-
-                    if(file.length==0){
-                        issyncgoing = 0;
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-
-                                Toast.makeText(getApplicationContext(), "No files to Sync", Toast.LENGTH_SHORT).show();
-
-                            }
-                        });
-                        return;
-                    }
-
-                    int i=1;
-                    final int l=file.length;
-                    final int[] x = {l};
-                    for(File f : file){
-
-                        URL url = new URL("http://10.129.28.209:8080/sherlock_server/Main");
-                        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-                        conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
-
-                        Log.d("inputString", String.valueOf(f));
-
-                        FileInputStream fstrm = new FileInputStream(f);
-
-
-                        String boundary = "*****";
-                        String Tag="fSnd";
-                        Log.e(Tag,"Starting Http File Sending to URL");
-
-                        // Open a HTTP connection to the URL
-                       // HttpURLConnection conn = (HttpURLConnection)connectURL.openConnection();
-
-                        // Allow Inputs
-                        conn.setDoInput(true);
-
-                        // Allow Outputs
-                        conn.setDoOutput(true);
-
-                        // Don't use a cached copy.
-                        conn.setUseCaches(false);
-
-                        // Use a post method.
-                        conn.setRequestMethod("POST");
-
-                        conn.setRequestProperty("Connection", "Keep-Alive");
-
-                        conn.setRequestProperty("Content-Type", "multipart/form-data;boundary="+boundary);
-                        Log.e(Tag,"Starting Http File Sending to URL");
-
-
-
-                        DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
-
-
-
-                        Log.e(Tag, "Headers are written");
-
-                        int bytesAvailable = fstrm.available();
-
-                        int maxBufferSize = 1024;
-                        int bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                        byte[ ] buffer = new byte[bufferSize];
-
-                        // read file and write it into form...
-                        int bytesRead = fstrm.read(buffer, 0, bufferSize);
-
-                        while (bytesRead > 0)
-                        {
-                            dos.write(buffer, 0, bufferSize);
-                            bytesAvailable = fstrm.available();
-                            bufferSize = Math.min(bytesAvailable,maxBufferSize);
-                            bytesRead = fstrm.read(buffer, 0,bufferSize);
-                        }
-
-                        fstrm.close();
-
-                        dos.flush();
-
-                        Log.e(Tag,"File Sent, Response: "+String.valueOf(conn.getResponseCode()));
-
-                        InputStream is = conn.getInputStream();
-
-                        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                        final String returnString = in.readLine();
-
-                        Log.d("asdas",returnString);
-                        if(returnString.equals("Success")){
-
-                            f.delete();
-
-                            final int finalI = i;
-                            runOnUiThread(new Runnable() {
-                                public void run() {
-
-                                    x[0] = x[0] -1;
-
-                                    Toast.makeText(getApplicationContext(), finalI +" out of "+l+" files synched succesfully",Toast.LENGTH_SHORT).show();
-                                    syncstatus.setText(x[0] +" files to be synced");
-                                }
-                            });
-                            i++;
-                        }
-
-
-
-                        dos.close();
-
-
-                    }
-
-
-                    issyncgoing=0;
-
-
-                }catch(Exception e)
-                {
-                    Log.d("Exception",e.toString());
-                    if(e.toString().contains("ConnectException")){
-                        runOnUiThread(new Runnable() {
-                            public void run() {
-                                Toast.makeText(MainActivity.this, "Unable to Connect -- check your internet connection", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                    issyncgoing=0;
-                }
-
-            }
-        }).start();
-
-    }
-
-   */
 
     private void syncstart() {
 
