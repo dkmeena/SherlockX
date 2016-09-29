@@ -107,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public SensorManager senSensorManager;
     public Sensor senAccelerometer;
     public float accx,accy,accz; // accelerometer
+    public float spd=0;
 
     public WifiManager mainWifiObj;
     public String wifiinfo = "";
@@ -137,10 +138,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public ZipEntry ze1;
     public byte[] buffer = new byte[1024];
 
+    public ConnectivityManager cm;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+
+        // Notify to sync data if lot of data to sync //
+
+        double size=0.0;
+        File dir1 = getExternalFilesDir(null);
+        File file1[] = dir1.listFiles();
+
+
+        for(File f:file1){
+            if(f.getName().contains("bad")){
+                f.delete();
+                continue;
+            }
+            size = size + f.length();
+            if(size>=10000000){
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setMessage(" You have lot of data collected -- tap sync to upload data to server ")
+                        .setCancelable(true)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dialog.cancel();
+                            }
+                        });
+                AlertDialog alert = builder.create();
+                alert.show();
+                Log.d("size", String.valueOf(size));
+                break;
+            }
+        }
+
+
+        // ------------------------- //
+
 
         username = (TextView) findViewById(R.id.username);
 
@@ -269,6 +308,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (v.getId() == R.id.start && start.getText().toString() == "START" && issyncgoing==0) {
 
             initialize();
+            cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 
             locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
             locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -341,12 +381,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             */
 
             // saving file directly to zip //
-            String zipfilename = fname+".zip";
+            String zipfilename = fname+"_bad.zip";
             File file = new File(getExternalFilesDir(null).toString());
             file.mkdirs();
             File f = new File(file, fname + ".txt");
             File f1 = new File(file,zipfilename);
-            zipfilename = fname+"_acc.zip";
+            zipfilename = fname+"_bad_acc.zip";
             File f2 = new File(file, fname + "_acc.txt");
             File f22 = new File(file,zipfilename);
             try {
@@ -453,7 +493,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         else if(v.getId() == R.id.sync && issyncgoing==0 && start.getText().toString()=="START"){
             issyncgoing = 1;
-
+            Toast.makeText(getApplicationContext()," data sync started",Toast.LENGTH_SHORT).show();
             syncstart();
 
         }
@@ -478,6 +518,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         bearing=0.0; rssi=0;
         wifiinfo="";
         accx = 0; accy=0; accz=0;
+        spd=0;
         checkconnection();
 
     }
@@ -537,6 +578,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
 
+
             Calendar c = Calendar.getInstance();
             int hr = c.get(Calendar.HOUR_OF_DAY);
             int mn = c.get(Calendar.MINUTE);
@@ -551,10 +593,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             netacc = location.getAccuracy();
             netacc = Math.round(netacc * 100);
             netacc = netacc / 100.0;
+
+
+            // check if connected to network //
+            String connect = "null";
+            String type="null",subtype="null";
+            boolean isConnected;
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            isConnected = activeNetwork != null && activeNetwork.isConnected();
+            if(isConnected){
+                connect = "yes";
+                type = activeNetwork.getTypeName();
+                subtype = activeNetwork.getSubtypeName();
+
+            }
+
+            // ------------------------------ //
+
             sfile =  hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
-            //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
-            try {
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +connect+ " || " + type + " || " + subtype +" || " +spd+" || "+bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+wifiinfo+"\n";
+
+           try {
                 //bufferedWriter.write(sfile);
                 zos.write(sfile.getBytes());
             } catch (IOException e) {
@@ -598,7 +657,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             curr_time = System.currentTimeMillis();
 
 
-            float spd = location.getSpeed();
+            spd = location.getSpeed();
             gpsspeed.setText((int) spd + " m/s");
 
             // for acceleration //
@@ -655,9 +714,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             gpsacc = Math.round(gpsacc * 100);
             gpsacc = gpsacc / 100.0;
 
-            sfile = hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
-            //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+
+            // check if connected to network //
+            String connect = "null";
+            String type="null",subtype="null";
+            boolean isConnected;
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            isConnected = activeNetwork != null && activeNetwork.isConnected();
+            if(isConnected){
+                connect = "yes";
+                type = activeNetwork.getTypeName();
+                subtype = activeNetwork.getSubtypeName();
+
+            }
+
+            // ------------------------------ //
+
+            sfile =  hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +connect+ " || " + type + " || " + subtype +" || " +spd+" || "+bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+wifiinfo+"\n";
+
             try {
                 //bufferedWriter.write(sfile);
                 zos.write(sfile.getBytes());
@@ -820,9 +895,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int mn = c.get(Calendar.MINUTE);
             int sec = c.get(Calendar.SECOND);
 
-            sfile = hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
-                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+accx+ " || " + accy + " || " + accz +" || " +wifiinfo+"\n";
-            //text.setText(strDate + " || " + hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon + " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi);
+
+            // check if connected to network //
+            String connect = "null";
+            String type="null",subtype="null";
+            boolean isConnected;
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            isConnected = activeNetwork != null && activeNetwork.isConnected();
+            if(isConnected){
+                connect = "yes";
+                type = activeNetwork.getTypeName();
+                subtype = activeNetwork.getSubtypeName();
+
+            }
+
+            // ------------------------------ //
+
+            sfile =  hr + "::" + mn + "::" + sec + " || " + gpslat + " || " + gpslon + " || " + gpsacc + " || " + netlat + " || " + netlon +
+                    " || " + netacc + " || " + cellid + " || " + operatorName + " || " + rssi + " || " +connect+ " || " + type + " || " + subtype +" || " +spd+" || "+bearing + " || " + mPDOP +" || "+mHDOP+" || "+mVDOP +" || "+wifiinfo+"\n";
+
             try {
                 //bufferedWriter.write(sfile);
                 zos.write(sfile.getBytes());
@@ -871,9 +962,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             String acc_s = hr + "::" + mn + "::" + sec + " || " + accx+ " || " + accy + " || " + accz +"\n";
 
-           //Log.d("accx", String.valueOf(accx)+" "+String.valueOf(accy)+" "+String.valueOf(accz));
-//            Log.d("accy",String.valueof(accy) );
-//            Log.d("accz", String.valueOf(accz));
             try {
                 //bufferedWriter.write(sfile);
                 zos1.write(acc_s.getBytes());
@@ -1029,7 +1117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }catch(Exception e)
                 {
                     Log.d("Exception",e.toString());
-                    if(e.toString().contains("ConnectException")){
+                    if(e.toString().contains("failed to connect") || e.toString().contains("SocketTimeout")){
                         runOnUiThread(new Runnable() {
                             public void run() {
                                 Toast.makeText(MainActivity.this, "Unable to Connect -- check your internet connection", Toast.LENGTH_SHORT).show();
@@ -1087,6 +1175,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zos1.closeEntry();
             zos1.close();
             fos1.close();
+
+            File file = new File(getExternalFilesDir(null).toString());
+            file.mkdirs();
+
+            File f = new File(file, fname + "_bad.zip");
+            f.renameTo(new File(file,fname+":"+curr_dis+"_"+curr_currdistime+".zip"));
+
+            f = new File(file, fname + "_bad_acc.zip");
+            f.renameTo(new File(file,fname+":"+curr_dis+"_"+curr_currdistime+"_acc.zip"));
+
+
             Toast.makeText(this,"file successfully saved locally ",Toast.LENGTH_SHORT).show();
             return true;
         } catch (IOException e) {
