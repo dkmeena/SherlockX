@@ -23,10 +23,6 @@ public class NotificationReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
 
 
-
-            Intent showIntent = new Intent(context, NextNotification.class);
-            PendingIntent contentIntent = PendingIntent.getActivity(context, 0, showIntent, 0);
-
             Log.d("Notification : ", "notifi");
             Notification notification;
 

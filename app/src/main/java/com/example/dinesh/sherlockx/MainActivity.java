@@ -1,7 +1,9 @@
 package com.example.dinesh.sherlockx;
 
 import android.Manifest;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -56,6 +58,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -183,24 +186,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         username = (TextView) findViewById(R.id.username);
-
-       /* Bundle extras = getIntent().getExtras();
-        if (extras != null) {
-
-            String value = extras.getString("Account Details");
-
-            String[] uname = value.split("-");
-            Log.d("dsada", uname[0]);
-            Log.d("dsada", uname[1]);
-            username.setText(uname[0]);
-            usrname = uname[0];
-            email = uname[1].replace(" ","");
-            String[] a = email.split("@gmail.com");
-            email = a[0];
-
-
-        }*/
-
 
         if(details.contains("islogged")&&details.contains("name")&&details.contains("email")&&details.contains("lastupdate")){
             username.setText(details.getString("name","Error"));
@@ -508,6 +493,59 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         accx = 0; accy=0; accz=0;
         spd=0;
         checkconnection();
+
+        Calendar c = Calendar.getInstance();
+        int hr = c.get(Calendar.HOUR_OF_DAY);;
+
+        SharedPreferences notif = getSharedPreferences("notifications", MODE_PRIVATE);
+        int cnt = notif.getInt(String.valueOf(hr), 0);
+        int max = notif.getInt("max", -1);
+        SharedPreferences.Editor edit = notif.edit();
+        if(max==-1){
+            edit.putInt("max",hr);
+        }
+        else{
+            int max_cnt =notif.getInt(String.valueOf(max),-1);
+            if(max_cnt < cnt + 1)
+                edit.putInt("max",hr);
+        }
+
+
+        edit.putInt(String.valueOf(hr), cnt+1);
+        edit.commit();
+
+        max = notif.getInt("max", -1);
+        if(max!=-1) {
+            Log.d("max", String.valueOf(max));
+            Calendar cal1 = Calendar.getInstance();
+
+            cal1.set(Calendar.HOUR_OF_DAY, max);
+            cal1.set(Calendar.MINUTE, 00);
+            cal1.set(Calendar.SECOND, 00);
+
+            Calendar now = Calendar.getInstance();
+            if (now.after(cal1))
+                cal1.add(Calendar.HOUR_OF_DAY, 24);
+
+            Intent intent = new Intent(getApplicationContext(), NotificationReceiver.class);
+
+            AlarmManager prevalarm = (AlarmManager) getSystemService(ALARM_SERVICE);
+            PendingIntent p = PendingIntent.getBroadcast(getApplicationContext(), 102, intent, PendingIntent.FLAG_UPDATE_CURRENT); // cancel previous alarm
+            prevalarm.cancel(p);
+            PendingIntent.getBroadcast(getApplicationContext(), 102, intent, PendingIntent.FLAG_UPDATE_CURRENT).cancel();
+
+            AlarmManager learnedalarm = (AlarmManager) getSystemService(ALARM_SERVICE);
+            PendingIntent p_learnedalarm = PendingIntent.getBroadcast(getApplicationContext(), 102, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            learnedalarm.setRepeating(AlarmManager.RTC_WAKEUP, cal1.getTimeInMillis(), DateUtils.DAY_IN_MILLIS, p_learnedalarm);
+        }
+
+       /* Map<String,?> keys = notif.getAll();
+
+        for(Map.Entry<String,?> entry : keys.entrySet()){
+            Log.d("map values",entry.getKey() + ": " +
+                    entry.getValue().toString());
+        }*/
+
 
     }
 
