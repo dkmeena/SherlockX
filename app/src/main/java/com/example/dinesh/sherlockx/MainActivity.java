@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // for acceleration //
     public int acc_cnt=0;
-
+    public long acc_time;
     // ----------------//
 
     public FileOutputStream fos;
@@ -308,181 +308,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         if (v.getId() == R.id.start && start.getText().toString() == "START" && issyncgoing==0) {
 
-            initialize();
-            cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
-
-            locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-          //  nmea = new NmeaSentence("");
-
-            mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
-
-
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        0);
-
-                return;
-
-            }
-
-            if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setMessage("Please Enable GPS with High Accuracy")
-                        .setCancelable(true)
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                                startActivity(intent);
-                            }
-                        });
-
-
-                AlertDialog alert = builder.create();
-                alert.show();
-
-                return;
-
-            }
-
-            // file name
-
-            Calendar c = Calendar.getInstance();
-            int hr = c.get(Calendar.HOUR_OF_DAY);
-            int mn = c.get(Calendar.MINUTE);
-            int sec = c.get(Calendar.SECOND);
-            SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
-            String strDate = mdformat.format(c.getTime());
-            fname = email +'@'+ strDate+'-'+hr+'_'+mn+'_'+sec;
-             Log.d("dsda", fname);
-
-            // ------------- //
-            //sfile = fname+"\n";
-
-            // creeting data file //
-
-           // saving file using buffered writer
-           /* try {
-                file = new File(getExternalFilesDir(null).toString());
-                file.mkdirs();
-                f = new File(file, fname + ".txt");
-                fw = new FileWriter(f, true);
-                bufferedWriter= new BufferedWriter(fw);
-                bufferedWriter.write(fname+"\n");
-            }
-            catch (IOException e){
-                e.printStackTrace();
-                return;
-            }
-            */
-
-            // saving file directly to zip //
-            String zipfilename = fname+"_bad.zip";
-            File file = new File(getExternalFilesDir(null).toString());
-            file.mkdirs();
-            File f = new File(file, fname + ".txt");
-            File f1 = new File(file,zipfilename);
-            zipfilename = fname+"_bad_acc.zip";
-            File f2 = new File(file, fname + "_acc.txt");
-            File f22 = new File(file,zipfilename);
-            try {
-                Log.d("asa",f1.getCanonicalPath());
-                Log.d("asas",f.getName());
-                fos = new FileOutputStream(f1.getCanonicalPath());
-                zos = new ZipOutputStream(fos);
-                ze = new ZipEntry(f.getName());
-                zos.putNextEntry(ze);
-                fos1 = new FileOutputStream(f22.getCanonicalPath());
-                zos1 = new ZipOutputStream(fos1);
-                ze1 = new ZipEntry(f2.getName());
-                zos1.putNextEntry(ze1);
-                Log.d("sda","adsads");
-
-            }
-            catch (IOException e){
-                e.printStackTrace();
-
-            }
-            // ------------------------------------------- //
-
-            start.setText("STOP");
-
-            prev_time = System.currentTimeMillis(); // for alarm
-            prev_currdistime = prev_time; // for current distance
-
-            starttime = prev_time;
-
-            senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-            senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-            senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_FASTEST);
-
-            locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
-            locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-            locationManagerGPS.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListenerGPS);
-
-            locationManagerGPS.addNmeaListener(nmeaListener);
-
-
-
-            Toast.makeText(getApplicationContext(), "Data Collection Started !!!", Toast.LENGTH_SHORT).show();
-
-            tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            MyListener = new MyPhoneStateListener();
-            tm.listen(MyListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
-
+            start();
 
         } else if (v.getId() == R.id.start && start.getText().toString() == "STOP" ) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setMessage(" Are you sure you want to STOP ?")
-                    .setCancelable(true)
-                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
 
-
-                            removeupdates();
-
-                             //sendtoserver();
-                            Toast.makeText(MainActivity.this, " Data Collection Stopped ", Toast.LENGTH_SHORT).show();
-
-
-                            writeToFile();
-                            updatedatabase();
-
-                            start.setText("START");
-
-                            File dir = getExternalFilesDir(null);
-                            File file[] = dir.listFiles();
-
-                            if(file.length==0){
-                                syncstatus.setText( "Nothing to sync");
-                            }
-                            else{
-                                syncstatus.setText(file.length + " files to be synced");
-                            }
-
-
-
-                        }
-                    })
-                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-
-                            dialog.cancel();
-                        }
-                    });
-            AlertDialog alert = builder.create();
-            alert.show();
-
-            // --------------- //
-
-
-            // --------------- //
+            stop();
 
         }
 
@@ -503,6 +333,163 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Toast.makeText(getApplicationContext(),"Wait for previous sync to complete",Toast.LENGTH_SHORT).show();
 
         }
+    }
+
+
+
+    private void start() {
+
+
+        initialize();
+        cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        //  nmea = new NmeaSentence("");
+
+        mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+
+
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    0);
+
+            return;
+
+        }
+
+        if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Please Enable GPS with High Accuracy")
+                    .setCancelable(true)
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int id) {
+                            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                            startActivity(intent);
+                        }
+                    });
+
+
+            AlertDialog alert = builder.create();
+            alert.show();
+
+            return;
+
+        }
+
+        // file name
+
+        Calendar c = Calendar.getInstance();
+        int hr = c.get(Calendar.HOUR_OF_DAY);
+        int mn = c.get(Calendar.MINUTE);
+        int sec = c.get(Calendar.SECOND);
+        SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
+        String strDate = mdformat.format(c.getTime());
+        fname = email +'@'+ strDate+'-'+hr+'_'+mn+'_'+sec;
+        Log.d("dsda", fname);
+
+        // saving file directly to zip //
+        String zipfilename = fname+"_bad.zip";
+        File file = new File(getExternalFilesDir(null).toString());
+        file.mkdirs();
+        File f = new File(file, fname + ".txt");
+        File f1 = new File(file,zipfilename);
+
+        try {
+            Log.d("asa",f1.getCanonicalPath());
+            Log.d("asas", f.getName());
+            fos = new FileOutputStream(f1.getCanonicalPath());
+            zos = new ZipOutputStream(fos);
+            ze = new ZipEntry(f.getName());
+            zos.putNextEntry(ze);
+
+            Log.d("sda","adsads");
+
+        }
+        catch (IOException e){
+            e.printStackTrace();
+
+        }
+        // ------------------------------------------- //
+
+        start.setText("STOP");
+
+        prev_time = System.currentTimeMillis(); // for alarm
+        prev_currdistime = prev_time; // for current distance
+
+        starttime = prev_time;
+
+        senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+       // senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_FASTEST);
+
+        locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
+        locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationManagerGPS.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListenerGPS);
+
+        locationManagerGPS.addNmeaListener(nmeaListener);
+
+
+
+        Toast.makeText(getApplicationContext(), "Data Collection Started !!!", Toast.LENGTH_SHORT).show();
+
+        tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        MyListener = new MyPhoneStateListener();
+        tm.listen(MyListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+
+
+
+    }
+
+    private void stop() {
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(" Are you sure you want to STOP ?")
+                .setCancelable(true)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+
+
+                        removeupdates();
+
+                        //sendtoserver();
+                        Toast.makeText(MainActivity.this, " Data Collection Stopped ", Toast.LENGTH_SHORT).show();
+
+
+                        writeToFile();
+                        updatedatabase();
+
+                        start.setText("START");
+
+                        File dir = getExternalFilesDir(null);
+                        File file[] = dir.listFiles();
+
+                        if(file.length==0){
+                            syncstatus.setText( "Nothing to sync");
+                        }
+                        else{
+                            syncstatus.setText(file.length + " files to be synced");
+                        }
+
+
+
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.cancel();
+                    }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+
     }
 
     private void initialize() {
@@ -544,6 +531,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     LocationListener locationListenerNET = new LocationListener() {
         public void onLocationChanged(Location location) {
 
+            // --- Stop taking acceelration data --- //
+
+            if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5 * 60 * 1000)) {
+
+                Log.d("fdf","haha");
+                senSensorManager.unregisterListener(MainActivity.this,senAccelerometer);
+                senSensorManager=null;
+
+            }
+
+             // ----------------- //
             // Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
             Log.d("Listener", "Location changed");
 
@@ -563,6 +561,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // ---------------------- //
 
             curr_time = System.currentTimeMillis();
+
+            if(curr_time - starttime > 7200000){
+                stop();
+                return;
+            }
 
             currtime.setText(String.valueOf((curr_time - starttime) / 1000) + " sec");
             curr_currdistime = (int) ((curr_time -starttime)/1000);
@@ -658,29 +661,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             curr_time = System.currentTimeMillis();
 
 
+            if(curr_time - starttime > 7200000){
+                stop();
+                return;
+            }
+
             spd = location.getSpeed();
             gpsspeed.setText((int) spd + " m/s");
 
             // for acceleration //
 
-           /* if(senSensorManager!=null && spd>=1 && acc_cnt==0){
+            if(spd>=1 && acc_cnt==0 && senSensorManager!=null ){
                 acc_cnt =1;
                 acc_time = curr_time;
                 Log.d("fdf","hiha");
+
+                String zipfilename = "";
+                File file = new File(getExternalFilesDir(null).toString());
+                file.mkdirs();
+
+                zipfilename = fname+"_bad_acc.zip";
+                File f2 = new File(file, fname + "_acc.txt");
+                File f22 = new File(file,zipfilename);
+
+                try{
+                fos1 = new FileOutputStream(f22.getCanonicalPath());
+                zos1 = new ZipOutputStream(fos1);
+                ze1 = new ZipEntry(f2.getName());
+                zos1.putNextEntry(ze1);
+                }
+                catch (IOException e){
+                    e.printStackTrace();
+
+                }
+
                 senSensorManager.registerListener(MainActivity.this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
             }
 
-            else {
-                if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5 * 60 * 1000)) {
 
-                    Log.d("fdf","haha");
-                    senSensorManager.unregisterListener(MainActivity.this,senAccelerometer);
-                    senSensorManager=null;
-
-                }
-            }
-
-            */
 
             // ------------------ //
 
@@ -801,16 +819,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             curr_time = System.currentTimeMillis();
 
-            // Accelerometer //
-            /*
-            if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5*60 * 1000)) {
-
-                Log.d("fdf","haha");
-                senSensorManager.unregisterListener(MainActivity.this,senAccelerometer);
-                senSensorManager=null;
-
-            }*/
-
+            if(curr_time - starttime > 7200000){
+                stop();
+                return;
+            }
 
             if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
 
@@ -1173,9 +1185,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             zos.closeEntry();
             zos.close();
             fos.close();
-            zos1.closeEntry();
-            zos1.close();
-            fos1.close();
+
+            if(zos1!=null) {
+                zos1.closeEntry();
+                zos1.close();
+                fos1.close();
+            }
 
             File file = new File(getExternalFilesDir(null).toString());
             file.mkdirs();
