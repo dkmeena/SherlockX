@@ -86,10 +86,11 @@ public class SignIn extends AppCompatActivity implements
         SharedPreferences details = getSharedPreferences("details", MODE_PRIVATE);
         SharedPreferences.Editor edit = details.edit();
         edit.clear();
-        edit.putBoolean("islogged",true);
+        edit.putBoolean("islogged", true);
         edit.putString("name", result.getSignInAccount().getDisplayName());
-        edit.putString("email",result.getSignInAccount().getEmail());
+        edit.putString("email", result.getSignInAccount().getEmail());
         edit.putString("phone",ph_number);
+        edit.putLong("lastupdate",System.currentTimeMillis());
         edit.commit();
         Intent i = new Intent(getApplicationContext(), MainActivity.class);
         startActivity(i);

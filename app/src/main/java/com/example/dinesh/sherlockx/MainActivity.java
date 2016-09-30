@@ -1,18 +1,16 @@
 package com.example.dinesh.sherlockx;
 
 import android.Manifest;
-import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
+import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -23,9 +21,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
-import android.os.Build;
+import android.os.AsyncTask;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
@@ -35,10 +34,10 @@ import android.telephony.PhoneStateListener;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.telephony.gsm.GsmCellLocation;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -49,23 +48,14 @@ import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -129,7 +119,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // ----------------//
 
-    public BufferedWriter bufferedWriter;
     public FileOutputStream fos;
     public ZipOutputStream zos;
     public ZipEntry ze;
@@ -144,6 +133,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        SharedPreferences details = getSharedPreferences("details",MODE_PRIVATE);
+
+        // check for updates //
+
+        if(details.contains("lastupdate")) {
+           Long lu = details.getLong("lastupdate",0);
+            if(lu!=0 && System.currentTimeMillis() -lu > 2*DateUtils.DAY_IN_MILLIS);
+                new version().execute("http://10.129.28.209/sherlock_server/version.php");
+        }
+
+        // ----------------- //
 
 
 
@@ -200,8 +201,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }*/
 
-        SharedPreferences details = getSharedPreferences("details",MODE_PRIVATE);
-        if(details.contains("islogged")&&details.contains("name")&&details.contains("email")){
+
+        if(details.contains("islogged")&&details.contains("name")&&details.contains("email")&&details.contains("lastupdate")){
             username.setText(details.getString("name","Error"));
             email = details.getString("email","Error");
             email = email.split("@gmail.com")[0];
@@ -857,9 +858,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int length=wifiScanList.size();
             for(int i = 0; i < length; i++){
                 if(i==0)
-                    wifiinfo = wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                    wifiinfo = wifiScanList.get(i).BSSID+";"+wifiScanList.get(i).SSID+";"+Integer.toString(wifiScanList.get(i).level)+",";
                 else
-                    wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                    wifiinfo += wifiScanList.get(i).BSSID+";"+wifiScanList.get(i).SSID+";"+Integer.toString(wifiScanList.get(i).level)+",";
 
             }
 
@@ -1216,4 +1217,116 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         return false;
     }
+
+
+    class  version extends AsyncTask<String,String,String>{
+
+        String versionName="!!";
+        int versionCode=0;
+        private ProgressDialog pdia;
+
+        @Override
+        protected String doInBackground(String... params) {
+
+
+            String returnString="--";
+
+            try {
+                PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+                versionName = packageInfo.versionName;
+                versionCode = packageInfo.versionCode;
+            } catch (PackageManager.NameNotFoundException e) {
+                e.printStackTrace();
+            }
+
+            if(versionName!="" && versionCode!=0) {
+                try {
+                    URL url = new URL(params[0]);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+                    String lineEnd = "\r\n";
+                    String twoHyphens = "--";
+                    String boundary = "*****";
+
+                    conn.setDoInput(true); // Allow Inputs
+                    conn.setDoOutput(true); // Allow Outputs
+                    conn.setUseCaches(false); // Don't use a Cached Copy
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Connection", "Keep-Alive");
+                    conn.setRequestProperty("ENCTYPE", "multipart/form-data");
+                    conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+                    int serverResponseCode = conn.getResponseCode();
+                    String serverResponseMessage = conn.getResponseMessage();
+
+                    Log.i("uploadFile", "HTTP Response is : "
+                            + serverResponseMessage + ": " + serverResponseCode);
+
+
+                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    returnString = in.readLine();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+            return returnString;
+        }
+
+        @Override
+        protected void onPreExecute(){
+            super.onPreExecute();
+            pdia = new ProgressDialog(MainActivity.this);
+            pdia.setMessage("Loading...");
+            pdia.show();
+        }
+        @Override
+        protected void onPostExecute(String result) {
+
+            if(result!="--" && versionName!="!!"){
+
+                    if(result.equals(versionName)){
+                        Log.d("update","no update");
+                    }
+                    else{
+
+
+                        SharedPreferences details = getSharedPreferences("details",MODE_PRIVATE);
+                        SharedPreferences.Editor edit = details.edit();
+                        edit.putLong("lastupdate", System.currentTimeMillis());
+                        edit.commit();
+
+                        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                        builder.setMessage(" Newer Version available -- Update your App ")
+                                .setCancelable(false)
+                                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+
+                                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                                        intent.setData(Uri.parse("market://details?id=com.example.dinesh.sherlockx"));
+                                        startActivity(intent);
+
+                                    }
+                                })
+                                .setNegativeButton("Cancel",new DialogInterface.OnClickListener(){
+                                            public void onClick(DialogInterface dialog, int id) {
+                                                dialog.cancel();
+                                            }
+
+                                        });
+                        AlertDialog alert = builder.create();
+                        alert.show();
+
+                        Log.d("update", "update required" + result + versionName);
+                    }
+
+            }
+
+
+            pdia.dismiss();
+        }
+    }
+
+
 }
