@@ -132,6 +132,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public ConnectivityManager cm;
 
+    public int filesizesynced = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -144,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(details.contains("lastupdate")) {
            Long lu = details.getLong("lastupdate",0);
             if(lu!=0 && System.currentTimeMillis() -lu > 2*DateUtils.DAY_IN_MILLIS);
-                new version().execute("http://10.129.28.209/sherlock_server/version.php");
+                new version().execute("http://safestreet.cse.iitb.ac.in:8080/sherlock_server/version.php");
         }
 
         // ----------------- //
@@ -321,7 +323,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-
     private void start() {
 
 
@@ -369,13 +370,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // file name
 
+        String versionName="null";
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            versionName = packageInfo.versionName;
+            } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
         Calendar c = Calendar.getInstance();
         int hr = c.get(Calendar.HOUR_OF_DAY);
         int mn = c.get(Calendar.MINUTE);
         int sec = c.get(Calendar.SECOND);
         SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
         String strDate = mdformat.format(c.getTime());
-        fname = email +'@'+ strDate+'-'+hr+'_'+mn+'_'+sec;
+        fname = email +'@'+versionName+'@'+ strDate+'-'+hr+'_'+mn+'_'+sec;
         Log.d("dsda", fname);
 
         // saving file directly to zip //
@@ -492,6 +501,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         wifiinfo="";
         accx = 0; accy=0; accz=0;
         spd=0;
+
+        filesizesynced = 0;
+
         checkconnection();
 
         Calendar c = Calendar.getInstance();
@@ -709,7 +721,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             // for acceleration //
 
-            if(spd>=1 && acc_cnt==0 && senSensorManager!=null ){
+            if(spd>=5 && acc_cnt==0 && senSensorManager!=null ){
                 acc_cnt =1;
                 acc_time = curr_time;
                 Log.d("fdf","hiha");
@@ -733,7 +745,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 }
 
-                senSensorManager.registerListener(MainActivity.this, senAccelerometer , SensorManager.SENSOR_DELAY_NORMAL);
+                senSensorManager.registerListener(MainActivity.this, senAccelerometer , SensorManager.SENSOR_DELAY_FASTEST);
             }
 
 
@@ -1033,7 +1045,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         new Thread(new Runnable() {
             public void run() {
-
+                filesizesynced = 0;
                 try{
 
                     File dir = getExternalFilesDir(null);
@@ -1052,15 +1064,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
 
 
-
-                    // client-server time sync //
-
-                    URL url = new URL("http://10.129.28.209/sherlock_server/filereceiver.php");
+                    URL url = new URL("http://safestreet.cse.iitb.ac.in:8080/sherlock_server/filereceiver.php");
                     HttpURLConnection conn = (HttpURLConnection)url.openConnection();
                     conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
 
-
-                    // ----------------------- //
 
                     int i=1;
                     final int l=file.length;
@@ -1071,9 +1078,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                    for(File f : file) {
 
-
                        FileInputStream fileInputStream = new FileInputStream(f);
-                       url = new URL("http://10.129.28.209/sherlock_server/filereceiver.php");
+                       url = new URL("http://safestreet.cse.iitb.ac.in:8080/sherlock_server/filereceiver.php");
                        conn = (HttpURLConnection)url.openConnection();
                        conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
 
@@ -1093,6 +1099,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                        dos.writeBytes(lineEnd);
 
+                       // client server time sync //
                        Calendar c = Calendar.getInstance();
                        int hr = c.get(Calendar.HOUR_OF_DAY);
                        int mn = c.get(Calendar.MINUTE);
@@ -1102,20 +1109,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                        dos.writeBytes(strDate+"-"+hr+"_"+mn+"_"+sec);
 
-                       dos.writeBytes(lineEnd); // above form ends here
+                       dos.writeBytes(lineEnd);
+
+                       // -------------------------- //
 
                        dos.writeBytes(twoHyphens + boundary + lineEnd);
                        dos.writeBytes("Content-Disposition: form-data; name=\"uploaded_file\";filename=\""+ f.getName() + "\"" + lineEnd);
 
                        dos.writeBytes(lineEnd);
 
-// create a buffer of maximum size
                        int bytesAvailable = fileInputStream.available();
 
                        int bufferSize = Math.min(bytesAvailable, 1024);
                        byte[] buffer = new byte[bufferSize];
 
-// read file and write it into form...
                        int bytesRead = fileInputStream.read(buffer, 0, bufferSize);
 
                        while (bytesRead > 0) {
@@ -1127,12 +1134,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                        }
 
-// send multipart form data necesssary after file data...
                        dos.writeBytes(lineEnd);
 
                        dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 
-// Responses from the server (code and message)
                        int serverResponseCode = conn.getResponseCode();
                        String serverResponseMessage = conn.getResponseMessage();
 
@@ -1145,7 +1150,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                        Log.d("asdas",returnString);
                        if(returnString.equals("Success")){
-
+                            filesizesynced+= f.length();
                            f.delete();
 
                            final int finalI = i;
@@ -1216,7 +1221,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public boolean writeToFile()  {
 
-        //Log.d("write :", data);
 
         try {
             //bufferedWriter.close();
@@ -1229,6 +1233,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 zos1.close();
                 fos1.close();
             }
+
+
+
 
             File file = new File(getExternalFilesDir(null).toString());
             file.mkdirs();
@@ -1296,7 +1303,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     URL url = new URL(params[0]);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
+                    conn.setConnectTimeout(10000);
                     String lineEnd = "\r\n";
                     String twoHyphens = "--";
                     String boundary = "*****";
@@ -1331,7 +1338,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         protected void onPreExecute(){
             super.onPreExecute();
             pdia = new ProgressDialog(MainActivity.this);
-            pdia.setMessage("Loading...");
+            pdia.setMessage("Checking for updates...");
             pdia.show();
         }
         @Override

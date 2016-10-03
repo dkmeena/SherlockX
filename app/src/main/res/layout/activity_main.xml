@@ -7,7 +7,8 @@
 
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="com.example.dinesh.sherlockx.MainActivity">
+    tools:context="com.example.dinesh.sherlockx.MainActivity"
+    android:paddingStart="10dp">
 
     <TextView
         android:layout_width="150dp"
@@ -28,7 +29,7 @@
 
         <TableRow>
             <TextView
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/cell_shape"
