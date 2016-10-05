@@ -146,7 +146,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if(details.contains("lastupdate")) {
            Long lu = details.getLong("lastupdate",0);
             if(lu!=0 && System.currentTimeMillis() -lu > 2*DateUtils.DAY_IN_MILLIS);
-                new version().execute("http://safestreet.cse.iitb.ac.in:8080/sherlock_server/version.php");
+                new version().execute("http://safestreet.cse.iitb.ac.in/findmytrain/sherlock_server/version.php");
         }
 
         // ----------------- //
@@ -1064,7 +1064,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     }
 
 
-                    URL url = new URL("http://safestreet.cse.iitb.ac.in:8080/sherlock_server/filereceiver.php");
+                    URL url = new URL("http://safestreet.cse.iitb.ac.in/findmytrain/sherlock_server/filereceiver.php");
                     HttpURLConnection conn = (HttpURLConnection)url.openConnection();
                     conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
 
@@ -1079,7 +1079,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                    for(File f : file) {
 
                        FileInputStream fileInputStream = new FileInputStream(f);
-                       url = new URL("http://safestreet.cse.iitb.ac.in:8080/sherlock_server/filereceiver.php");
+                       url = new  URL("http://safestreet.cse.iitb.ac.in/findmytrain/sherlock_server/filereceiver.php");
                        conn = (HttpURLConnection)url.openConnection();
                        conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
 

@@ -31,6 +31,7 @@
 
         <activity android:name=".MainActivity"></activity>
         <activity android:name=".SignIn"></activity>
+        <activity android:name=".PhoneNumber"></activity>
 
         <receiver android:name=".NotificationReceiver">
             <intent-filter>
