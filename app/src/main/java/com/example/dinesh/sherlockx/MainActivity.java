@@ -59,6 +59,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -109,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //public String mProvider = "";
     //--------
 
-
+    public int wait=0;
 
     public String fname = "";
     public int curr_dis = 0;
@@ -309,10 +310,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         else if(v.getId() == R.id.sync && start.getText().toString()=="STOP"){
             Toast.makeText(getApplicationContext()," Stop the trip first ",Toast.LENGTH_SHORT).show();
         }
-        else if(v.getId() == R.id.sync && issyncgoing==0 && start.getText().toString()=="START"){
-            issyncgoing = 1;
-            Toast.makeText(getApplicationContext()," data sync started",Toast.LENGTH_SHORT).show();
-            syncstart();
+        else if(v.getId() == R.id.sync && issyncgoing==0 && start.getText().toString()=="START" ){
+
+            if(wait==1){
+                Toast.makeText(getApplicationContext(), " wait ... ", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            wait=1;
+            File dir = getExternalFilesDir(null);
+            File file[] = dir.listFiles();
+
+            if(file.length==0){
+                syncstatus.setText( "Nothing to sync");
+                Toast.makeText(this,"Nothing to sync",Toast.LENGTH_SHORT).show();
+                wait=0;
+                return;
+            }
+
+            new sync_check().execute("http://safestreet.cse.iitb.ac.in/findmytrain/sherlock_server/data_synced.php");
 
         }
         else if(v.getId() == R.id.sync && issyncgoing==1){
@@ -320,6 +336,98 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Toast.makeText(getApplicationContext(),"Wait for previous sync to complete",Toast.LENGTH_SHORT).show();
 
         }
+    }
+
+
+    class  sync_check extends AsyncTask<String,String,String> {
+
+        String versionName = "!!";
+        int versionCode = 0;
+        private ProgressDialog pdia;
+
+        @Override
+        protected String doInBackground(String... params) {
+
+
+            String returnString = "--";
+
+                try {
+                    URL url = new URL(params[0]);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setConnectTimeout(10000);
+                    String lineEnd = "\r\n";
+                    String twoHyphens = "--";
+                    String boundary = "*****";
+
+                    conn.setDoInput(true); // Allow Inputs
+                    conn.setDoOutput(true); // Allow Outputs
+                    conn.setUseCaches(false); // Don't use a Cached Copy
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Connection", "Keep-Alive");
+                    conn.setRequestProperty("ENCTYPE", "multipart/form-data");
+                    conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+                    DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+
+                    dos.writeBytes(twoHyphens + boundary + lineEnd);  // new form to send
+                    dos.writeBytes("Content-Disposition: form-data; name=\"data_synced_check\"" + lineEnd);
+
+                    dos.writeBytes(lineEnd);
+                    dos.writeBytes(email);
+
+                    dos.writeBytes(lineEnd);
+
+                    dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+
+                    int serverResponseCode = conn.getResponseCode();
+                    String serverResponseMessage = conn.getResponseMessage();
+
+                    Log.i("uploadFile", "HTTP Response is : "
+                            + serverResponseMessage + ": " + serverResponseCode);
+
+
+                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    returnString = in.readLine();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+        return returnString;
+
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pdia = new ProgressDialog(MainActivity.this);
+            pdia.setMessage("processing ...");
+            pdia.show();
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+
+            result=result.trim();
+            wait=0;
+            pdia.dismiss();
+            Log.d("sa",result);
+            if(result.equals("--")||result.equals("true")) {
+                issyncgoing = 1;
+               // Toast.makeText(MainActivity.this, " data sync started", Toast.LENGTH_SHORT).show();
+                syncstart();
+            }
+
+            else if(result.equals("false")){
+                Log.d("sa",result);
+                Toast.makeText(MainActivity.this, " Your Sending limit for a month is over -- try when its over", Toast.LENGTH_SHORT).show();
+
+            }
+
+
+        }
+
     }
 
 
@@ -501,7 +609,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         wifiinfo="";
         accx = 0; accy=0; accz=0;
         spd=0;
-
+        wait=0;
         filesizesynced = 0;
 
         checkconnection();
@@ -1150,7 +1258,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                        Log.d("asdas",returnString);
                        if(returnString.equals("Success")){
-                            filesizesynced+= f.length();
+                           filesizesynced+= f.length();
                            f.delete();
 
                            final int finalI = i;
@@ -1159,7 +1267,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                    x[0] = x[0] -1;
 
-                                   Toast.makeText(getApplicationContext(), finalI +" out of "+l+" files synched succesfully",Toast.LENGTH_SHORT).show();
+                                   Toast.makeText(getApplicationContext(), finalI +" out of "+l+" files synced succesfully",Toast.LENGTH_SHORT).show();
                                    syncstatus.setText(x[0] +" files to be synced");
                                }
                            });
@@ -1167,6 +1275,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                        }
 
                    }
+
+                    // data sync threshold //
+
+                    url = new  URL("http://safestreet.cse.iitb.ac.in/findmytrain/sherlock_server/data_synced.php");
+                    conn = (HttpURLConnection)url.openConnection();
+                    conn.setConnectTimeout(10000); // connection timeout set to be 10 seconds
+                    conn.setDoInput(true); // Allow Inputs
+                    conn.setDoOutput(true); // Allow Outputs
+                    conn.setUseCaches(false); // Don't use a Cached Copy
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Connection", "Keep-Alive");
+                    conn.setRequestProperty("ENCTYPE", "multipart/form-data");
+                    conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+                    DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+
+                    dos.writeBytes(twoHyphens + boundary + lineEnd);  // new form to send
+                    dos.writeBytes("Content-Disposition: form-data; name=\"data_synced\"" + lineEnd);
+
+                    dos.writeBytes(lineEnd);
+                    dos.writeBytes(email+"-"+String.valueOf(filesizesynced));
+
+                    dos.writeBytes(lineEnd);
+
+                    dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+                    int serverResponseCode = conn.getResponseCode();
+                    String serverResponseMessage = conn.getResponseMessage();
+
+                    Log.i("uploadFile", "HTTP Response is : "
+                            + serverResponseMessage + ": " + serverResponseCode);
+
+
+                    BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    final String returnString = in.readLine();
+
+                    // -------------------------------- //
+
                     issyncgoing=0;
 
 
@@ -1343,7 +1489,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         @Override
         protected void onPostExecute(String result) {
-
+            result=result.trim();
             if(result!="--" && versionName!="!!"){
 
                     if(result.equals(versionName)){

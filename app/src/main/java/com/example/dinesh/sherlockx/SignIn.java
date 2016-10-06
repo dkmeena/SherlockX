@@ -123,43 +123,6 @@ public class SignIn extends AppCompatActivity implements
         final EditText userInput = (EditText) promptsView
                 .findViewById(R.id.editTextDialogUserInput);
 
-        // set dialog message
-       /* alertDialogBuilder
-                .setMessage(" Enter Your Phone Number ")
-                .setCancelable(false)
-                .setPositiveButton("OK",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                Log.d("asa",userInput.getText().toString());
-                                if (userInput.getText() != null && Pattern.matches("[0-9]{10}", (userInput.getText().toString()))) {
-                                    Log.d("d","asdsds");
-                                    phonenum = userInput.getText().toString();
-                                    new phone().execute("http://safestreet.cse.iitb.ac.in/findmytrain/sherlock_server/phone.php");
-                                   // dialog.cancel();
-                                } else {
-                                    Log.d("d","fsfssc");
-                                    userInput.setError(" Invalid Mobile Number ");
-
-                                }
-
-
-                            }
-                        })
-                .setNegativeButton("Cancel",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                dialog.cancel();
-                            }
-                        });
-
-        // create alert dialog
-        AlertDialog alertDialog = alertDialogBuilder.create();
-
-        // show it
-        alertDialog.show();*/
-
-
-
         alertDialogBuilder.setPositiveButton("OK", null);
         alertDialogBuilder.setNegativeButton("Cancel", null);
         alertDialogBuilder.setMessage(" Enter Your Phone Number ");
