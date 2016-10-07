@@ -51,12 +51,39 @@ public class SignInActivity extends AppCompatActivity {
         amNot.setRepeating(AlarmManager.RTC_WAKEUP, cal1.getTimeInMillis(), DateUtils.DAY_IN_MILLIS, morning);
         amNot.setRepeating(AlarmManager.RTC_WAKEUP, cal2.getTimeInMillis(), DateUtils.DAY_IN_MILLIS, evening);
 
-        // ----------------------------- //
+        // learned notification //
+
+        SharedPreferences notif = getSharedPreferences("notifications", MODE_PRIVATE);
+        if(notif.contains("max")) {
+            int max = notif.getInt("max", -1);
+            if (max != -1) {
+                //Log.d("max", String.valueOf(max));
+                cal1 = Calendar.getInstance();
+
+                cal1.set(Calendar.HOUR_OF_DAY, max);
+                cal1.set(Calendar.MINUTE, 00);
+                cal1.set(Calendar.SECOND, 00);
+
+                now = Calendar.getInstance();
+                if (now.after(cal1))
+                    cal1.add(Calendar.HOUR_OF_DAY, 24);
+
+               // Intent intent = new Intent(getApplicationContext(), NotificationReceiver.class);
+                AlarmManager learnedalarm = (AlarmManager) getSystemService(ALARM_SERVICE);
+                PendingIntent p_learnedalarm = PendingIntent.getBroadcast(getApplicationContext(), 102, intent1, PendingIntent.FLAG_UPDATE_CURRENT);
+                learnedalarm.setRepeating(AlarmManager.RTC_WAKEUP, cal1.getTimeInMillis(), DateUtils.DAY_IN_MILLIS, p_learnedalarm);
+            }
+        }
+
+
+        // -------------------- //
+
+
 
         SharedPreferences details = getSharedPreferences("details", MODE_PRIVATE);
-        Log.d("asas", String.valueOf(details));
+       // Log.d("asas", String.valueOf(details));
         if (!details.contains("islogged")) {
-            Log.d("first","first time login");
+         //   Log.d("first","first time login");
             Intent i = new Intent(getApplicationContext(), SignIn.class);
             startActivity(i);
 
@@ -66,7 +93,7 @@ public class SignInActivity extends AppCompatActivity {
 
             Intent i = new Intent(getApplicationContext(), MainActivity.class);
             startActivity(i);
-            Log.d("exists", "login exists");
+           // Log.d("exists", "login exists");
         }
 
 

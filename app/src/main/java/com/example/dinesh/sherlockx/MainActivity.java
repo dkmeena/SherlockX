@@ -243,11 +243,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         createdatabase();
 
-        locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        nmea = new NmeaSentence("");
 
 
         start.setText("START");
@@ -447,16 +442,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initialize();
         cm = (ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-        //  nmea = new NmeaSentence("");
-
-        mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
-
-
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this,
@@ -466,6 +451,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
 
         }
+
+        locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 
         if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -537,16 +525,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         starttime = prev_time;
 
         senSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mainWifiObj = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        nmea = new NmeaSentence("");
         senAccelerometer = senSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-       // senSensorManager.registerListener((SensorEventListener) this, senAccelerometer , SensorManager.SENSOR_DELAY_FASTEST);
-
-        locationManagerNET = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationManagerNET.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListenerNET);
-        locationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         locationManagerGPS.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListenerGPS);
 
         locationManagerGPS.addNmeaListener(nmeaListener);
-
 
 
         Toast.makeText(getApplicationContext(), "Data Collection Started !!!", Toast.LENGTH_SHORT).show();
@@ -646,6 +631,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         checkconnection();
 
+
+        // for learned notification //
         Calendar c = Calendar.getInstance();
         int hr = c.get(Calendar.HOUR_OF_DAY);;
 
@@ -664,32 +651,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         edit.putInt(String.valueOf(hr), cnt+1);
-        edit.commit();
+        edit.apply();
 
-        max = notif.getInt("max", -1);
-        if(max!=-1) {
-            Log.d("max", String.valueOf(max));
-            Calendar cal1 = Calendar.getInstance();
+        // ------------------------- //
 
-            cal1.set(Calendar.HOUR_OF_DAY, max);
-            cal1.set(Calendar.MINUTE, 00);
-            cal1.set(Calendar.SECOND, 00);
-
-            Calendar now = Calendar.getInstance();
-            if (now.after(cal1))
-                cal1.add(Calendar.HOUR_OF_DAY, 24);
-
-            Intent intent = new Intent(getApplicationContext(), NotificationReceiver.class);
-
-            AlarmManager prevalarm = (AlarmManager) getSystemService(ALARM_SERVICE);
-            PendingIntent p = PendingIntent.getBroadcast(getApplicationContext(), 102, intent, PendingIntent.FLAG_UPDATE_CURRENT); // cancel previous alarm
-            prevalarm.cancel(p);
-            PendingIntent.getBroadcast(getApplicationContext(), 102, intent, PendingIntent.FLAG_UPDATE_CURRENT).cancel();
-
-            AlarmManager learnedalarm = (AlarmManager) getSystemService(ALARM_SERVICE);
-            PendingIntent p_learnedalarm = PendingIntent.getBroadcast(getApplicationContext(), 102, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-            learnedalarm.setRepeating(AlarmManager.RTC_WAKEUP, cal1.getTimeInMillis(), DateUtils.DAY_IN_MILLIS, p_learnedalarm);
-        }
 
        /* Map<String,?> keys = notif.getAll();
 
@@ -733,7 +698,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
              // ----------------- //
             // Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
-            Log.d("Listener", "Location changed");
+            //Log.d("Listener", "Location changed");
 
             // wifi list //
 
@@ -762,7 +727,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if(curr_time - prev_time >= 30000){
                 prev_time = curr_time;
-                Log.d("Alarm","Alarm");
+                //Log.d("Alarm","Alarm");
                 PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
                         PowerManager.SCREEN_DIM_WAKE_LOCK |
                                 PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
@@ -829,7 +794,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onLocationChanged(Location location) {
 
             //Toast.makeText(MainActivity.this, "location changed", Toast.LENGTH_SHORT).show();
-            Log.d("Listener", "Location changed");
+            //Log.d("Listener", "Location changed");
 
             bearing = location.getBearing();
 
@@ -864,7 +829,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if(spd>=5 && acc_cnt==0 && senSensorManager!=null ){
                 acc_cnt =1;
                 acc_time = curr_time;
-                Log.d("fdf","hiha");
+
+                //Log.d("fdf","hiha");
 
                 String zipfilename = "";
                 File file = new File(getExternalFilesDir(null).toString());
@@ -897,7 +863,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if(curr_time - prev_time >= 30000){
                 prev_time = curr_time;
-                Log.d("Alarm","Alarm");
+                //Log.d("Alarm","Alarm");
                 PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
                         PowerManager.SCREEN_DIM_WAKE_LOCK |
                                 PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
@@ -1002,7 +968,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         public void onSignalStrengthsChanged(SignalStrength signalStrength) {
             super.onSignalStrengthsChanged(signalStrength);
             // Toast.makeText(getApplicationContext(), "signal changed" , Toast.LENGTH_SHORT).show();
-            Log.d("signal", "signal changed");
+            //Log.d("signal", "signal changed");
 
 
             // collect wifi information //
@@ -1014,7 +980,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return;
             }
 
-            if (!locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            if ( locationManagerGPS!=null && !locationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationListenerNET!=null && !locationManagerNET.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 builder.setMessage("GPS setting changed -- Please Enable GPS with High Accuracy and start again")
@@ -1066,7 +1032,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             }
 
-            Log.d("wifi: ",wifiinfo);
+            //Log.d("wifi: ",wifiinfo);
             // -------------- //
 
             currtime.setText(String.valueOf ((curr_time -starttime)/1000) + " sec");
@@ -1076,7 +1042,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 prev_time = curr_time;
 
-                Log.d("Alarm","Alarm");
+                //Log.d("Alarm","Alarm");
                 PowerManager.WakeLock wakeLock = ((PowerManager) getApplicationContext().getSystemService(Context.POWER_SERVICE)).newWakeLock(
                         PowerManager.SCREEN_DIM_WAKE_LOCK |
                                 PowerManager.ACQUIRE_CAUSES_WAKEUP , "WakeLock");
@@ -1288,7 +1254,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                        final String returnString = in.readLine();
 
-                       Log.d("asdas",returnString);
+                       //Log.d("asdas",returnString);
                        if(returnString.equals("Success")){
                            filesizesynced+= f.length();
                            f.delete();
@@ -1350,7 +1316,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 }catch(Exception e)
                 {
-                    Log.d("Exception",e.toString());
+                    //Log.d("Exception",e.toString());
                     if(e.toString().contains("failed to connect") || e.toString().contains("SocketTimeout")){
                         runOnUiThread(new Runnable() {
                             public void run() {
@@ -1526,7 +1492,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if(result!="--" && versionName!="!!"){
 
                     if(result.equals(versionName)){
-                        Log.d("update","no update");
+                        //Log.d("update","no update");
                     }
                     else{
 
@@ -1557,7 +1523,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         AlertDialog alert = builder.create();
                         alert.show();
 
-                        Log.d("update", "update required" + result + versionName);
+                       // Log.d("update", "update required" + result + versionName);
                     }
 
             }

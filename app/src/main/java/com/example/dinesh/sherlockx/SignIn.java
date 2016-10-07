@@ -87,15 +87,15 @@ public class SignIn extends AppCompatActivity implements
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
-
-            if(result.isSuccess()){
+           // Log.d("asa", String.valueOf(result.getSignInAccount()));
+            if(result!=null && result.isSuccess()){
               //  Log.d("aad", String.valueOf(result.getSignInAccount().getDisplayName()));
                 Toast.makeText(this,result.getSignInAccount().getDisplayName(),Toast.LENGTH_SHORT).show();
                 HandleSignIn(result);
                 //finish();
             }
             else{
-                Toast.makeText(this,"Network Error -- Check your internet connection",Toast.LENGTH_SHORT).show();
+                Toast.makeText(this," Oops!! ",Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -147,7 +147,7 @@ public class SignIn extends AppCompatActivity implements
                             new phone().execute("http://safestreet.cse.iitb.ac.in/findmytrain/sherlock_server/phone.php");
                              dialog.cancel();
                         } else {
-                            Log.d("d","fsfssc");
+                           // Log.d("d","fsfssc");
                             userInput.setError(" Invalid Mobile Number ");
 
                         }
@@ -254,11 +254,11 @@ public class SignIn extends AppCompatActivity implements
         protected void onPostExecute(String result) {
             result=result.trim();
             if(!result.equals("--")){
-                Log.d("asa","asda -- "+result);
+                //Log.d("asa","asda -- "+result);
 
                 if(result!=null && result.equals("Success")){
 
-                    Log.d("ASA", "PHONE ADDED");
+                   // Log.d("ASA", "PHONE ADDED");
 
                     SharedPreferences details = getSharedPreferences("details", MODE_PRIVATE);
                     SharedPreferences.Editor edit = details.edit();
