@@ -8,6 +8,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -27,6 +28,7 @@ import android.net.Uri;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
+import android.os.BatteryManager;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
@@ -135,6 +137,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public int filesizesynced = 0;
 
+    IntentFilter ifilter;
+    Intent batteryStatus;
+    float init_level= 0;
+    float final_level=0;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -186,6 +194,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         // ------------------------- //
+
 
 
         username = (TextView) findViewById(R.id.username);
@@ -242,6 +251,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
         start.setText("START");
+
 
 
 
@@ -551,6 +561,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void stop() {
 
+        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+
+        final_level = level / (float) scale;
+
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage(" Are you sure you want to STOP ?")
                 .setCancelable(true)
@@ -595,6 +611,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initialize() {
+
+
+        // battery level //
+
+        ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        batteryStatus = registerReceiver(null, ifilter);
+
+        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+
+        init_level = level / (float)scale;
+
+
+        // ------------ //
+
+
 
         acc_cnt=0;
         wifiinfo = "";
@@ -1381,13 +1413,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
 
+            int power_consumed = Math.round(final_level - init_level);
 
 
             File file = new File(getExternalFilesDir(null).toString());
             file.mkdirs();
 
             File f = new File(file, fname + "_bad.zip");
-            f.renameTo(new File(file,fname+":"+curr_dis+"_"+curr_currdistime+".zip"));
+            f.renameTo(new File(file,fname+":"+curr_dis+"_"+curr_currdistime+"_"+power_consumed+".zip"));
 
             f = new File(file, fname + "_bad_acc.zip");
             f.renameTo(new File(file,fname+":"+curr_dis+"_"+curr_currdistime+"_acc.zip"));

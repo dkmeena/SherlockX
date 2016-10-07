@@ -87,9 +87,9 @@ public class SignIn extends AppCompatActivity implements
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent(...);
         if (requestCode == RC_SIGN_IN) {
             GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
-            // handleSignInResult(result);
+
             if(result.isSuccess()){
-                Log.d("aad", String.valueOf(result.getSignInAccount().getDisplayName()));
+              //  Log.d("aad", String.valueOf(result.getSignInAccount().getDisplayName()));
                 Toast.makeText(this,result.getSignInAccount().getDisplayName(),Toast.LENGTH_SHORT).show();
                 HandleSignIn(result);
                 //finish();
@@ -252,8 +252,9 @@ public class SignIn extends AppCompatActivity implements
         }
         @Override
         protected void onPostExecute(String result) {
-            Log.d("as",result);
-            if(result!="--"){
+            result=result.trim();
+            if(!result.equals("--")){
+                Log.d("asa","asda -- "+result);
 
                 if(result!=null && result.equals("Success")){
 
@@ -284,6 +285,15 @@ public class SignIn extends AppCompatActivity implements
                     });
 
                 }
+            }
+
+            else{
+
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast.makeText(SignIn.this, " Network Error -- Check your Internet Connection and try again ", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
             }
 

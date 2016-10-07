@@ -56,10 +56,10 @@ public class SignInActivity extends AppCompatActivity {
         SharedPreferences details = getSharedPreferences("details", MODE_PRIVATE);
         Log.d("asas", String.valueOf(details));
         if (!details.contains("islogged")) {
-
+            Log.d("first","first time login");
             Intent i = new Intent(getApplicationContext(), SignIn.class);
             startActivity(i);
-            Log.d("first","first time login");
+
 
 
         } else {

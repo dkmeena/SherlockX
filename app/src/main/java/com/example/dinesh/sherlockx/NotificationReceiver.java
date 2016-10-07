@@ -34,7 +34,7 @@ public class NotificationReceiver extends BroadcastReceiver {
                     .setContentTitle(" SherlockX ")
                     .setContentText(" Collect data using SherlockX ")
                     .setAutoCancel(true)
-                    .setSmallIcon(R.drawable.train);
+                    .setSmallIcon(R.mipmap.ic_launcher);
 
 //        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 //        builder.setSound(alarmSound);
