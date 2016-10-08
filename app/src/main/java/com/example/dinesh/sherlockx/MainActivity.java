@@ -187,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         });
                 AlertDialog alert = builder.create();
                 alert.show();
-                Log.d("size", String.valueOf(size));
+               // Log.d("size", String.valueOf(size));
                 break;
             }
         }
@@ -413,11 +413,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         @Override
         protected void onPostExecute(String result) {
-
+            //Log.d("asds",result);
             result=result.trim();
             wait=0;
             pdia.dismiss();
-            Log.d("sa",result);
+            //Log.d("sa",result);
             if(result.equals("--")||result.equals("true")) {
                 issyncgoing = 1;
                // Toast.makeText(MainActivity.this, " data sync started", Toast.LENGTH_SHORT).show();
@@ -425,7 +425,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
             else if(result.equals("false")){
-                Log.d("sa",result);
+               // Log.d("sa",result);
                 Toast.makeText(MainActivity.this, " Your Sending limit for a month is over -- try when its over", Toast.LENGTH_SHORT).show();
 
             }
@@ -491,7 +491,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         SimpleDateFormat mdformat = new SimpleDateFormat("yyyy_MM_dd");
         String strDate = mdformat.format(c.getTime());
         fname = email +'@'+versionName+'@'+ strDate+'-'+hr+'_'+mn+'_'+sec;
-        Log.d("dsda", fname);
+       // Log.d("dsda", fname);
 
         // saving file directly to zip //
         String zipfilename = fname+"_bad.zip";
@@ -501,14 +501,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         File f1 = new File(file,zipfilename);
 
         try {
-            Log.d("asa",f1.getCanonicalPath());
-            Log.d("asas", f.getName());
+            //Log.d("asa",f1.getCanonicalPath());
+            //Log.d("asas", f.getName());
             fos = new FileOutputStream(f1.getCanonicalPath());
             zos = new ZipOutputStream(fos);
             ze = new ZipEntry(f.getName());
             zos.putNextEntry(ze);
 
-            Log.d("sda","adsads");
+           // Log.d("sda","adsads");
 
         }
         catch (IOException e){
@@ -546,10 +546,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void stop() {
 
-        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-
-        final_level = level / (float) scale;
 
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -558,6 +554,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
 
+                        ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+                        batteryStatus = registerReceiver(null, ifilter);
+
+                        int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                        int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+
+                        final_level = level / (float) scale;
+                        final_level=final_level*100;
+                        Log.d("final", String.valueOf(final_level));
 
                         removeupdates();
 
@@ -607,8 +612,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
 
         init_level = level / (float)scale;
-
-
+        init_level=init_level*100;
+        Log.d("final", String.valueOf(init_level));
         // ------------ //
 
 
@@ -690,7 +695,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             if (senSensorManager!=null && acc_cnt ==1 && ((curr_time-acc_time) >= 5 * 60 * 1000)) {
 
-                Log.d("fdf","haha");
+               // Log.d("fdf","haha");
                 senSensorManager.unregisterListener(MainActivity.this,senAccelerometer);
                 senSensorManager=null;
 
@@ -707,9 +712,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int length=wifiScanList.size();
             for(int i = 0; i < length; i++){
                 if(i==0)
-                    wifiinfo = wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                    wifiinfo = wifiScanList.get(i).BSSID+";"+wifiScanList.get(i).SSID+";"+Integer.toString(wifiScanList.get(i).level)+",";
                 else
-                    wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                    wifiinfo += wifiScanList.get(i).BSSID+";"+wifiScanList.get(i).SSID+";"+Integer.toString(wifiScanList.get(i).level)+",";
 
             }
 
@@ -804,9 +809,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             int length=wifiScanList.size();
             for(int i = 0; i < length; i++){
                 if(i==0)
-                    wifiinfo = wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                    wifiinfo = wifiScanList.get(i).BSSID+";"+wifiScanList.get(i).SSID+";"+Integer.toString(wifiScanList.get(i).level)+",";
                 else
-                    wifiinfo += wifiScanList.get(i).BSSID.toString()+";"+wifiScanList.get(i).SSID.toString()+";"+Integer.toString(wifiScanList.get(i).level)+",";
+                    wifiinfo += wifiScanList.get(i).BSSID+";"+wifiScanList.get(i).SSID+";"+Integer.toString(wifiScanList.get(i).level)+",";
 
             }
 
@@ -1316,8 +1321,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 }catch(Exception e)
                 {
-                    //Log.d("Exception",e.toString());
-                    if(e.toString().contains("failed to connect") || e.toString().contains("SocketTimeout")){
+                    Log.d("Exception",e.toString());
+                    if(e.toString().contains("failed to connect") || e.toString().contains("SocketTimeout") || e.toString().contains("Unable to resolve host")){
                         runOnUiThread(new Runnable() {
                             public void run() {
                                 Toast.makeText(MainActivity.this, "Unable to Connect -- check your internet connection", Toast.LENGTH_SHORT).show();
@@ -1379,8 +1384,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
 
 
-            int power_consumed = Math.round(final_level - init_level);
-
+            int power_consumed = Math.round(init_level-final_level);
+            Toast.makeText(this,String.valueOf(power_consumed),Toast.LENGTH_SHORT).show();
+            if(power_consumed<0) power_consumed = 0;
 
             File file = new File(getExternalFilesDir(null).toString());
             file.mkdirs();
