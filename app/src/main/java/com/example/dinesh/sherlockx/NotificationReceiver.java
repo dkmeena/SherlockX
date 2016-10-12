@@ -1,5 +1,6 @@
 package com.example.dinesh.sherlockx;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -22,13 +23,23 @@ public class NotificationReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
 
-
-            Log.d("Notification : ", "notifi");
+           // Log.d("Notification : ", "notifi");
             Notification notification;
 
             NotificationManager notificationManager = (NotificationManager) context.getSystemService(context.NOTIFICATION_SERVICE);
-            Intent repeating_intent = new Intent(context, SignInActivity.class);
-            repeating_intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            Intent repeating_intent;
+            if(MainActivity.ifopen){
+                  repeating_intent = new Intent(context, MainActivity.class);
+                  repeating_intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                  //repeating_intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                //startActivity(reorderIntent);
+               }
+
+            else{
+                repeating_intent = new Intent(context, SignInActivity.class);
+                repeating_intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            }
+
             PendingIntent pendingIntent = PendingIntent.getActivity(context, 100, repeating_intent, PendingIntent.FLAG_UPDATE_CURRENT);
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context).setContentIntent(pendingIntent)
                     .setContentTitle(" SherlockX ")

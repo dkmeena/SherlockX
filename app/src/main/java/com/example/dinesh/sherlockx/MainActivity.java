@@ -137,6 +137,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public int filesizesynced = 0;
 
+    public static boolean ifopen=false;
+
     IntentFilter ifilter;
     Intent batteryStatus;
     float init_level= 0;
@@ -147,6 +149,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        ifopen = true;
 
         SharedPreferences details = getSharedPreferences("details",MODE_PRIVATE);
 
@@ -562,7 +566,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                         final_level = level / (float) scale;
                         final_level=final_level*100;
-                        Log.d("final", String.valueOf(final_level));
+                       // Log.d("final", String.valueOf(final_level));
 
                         removeupdates();
 
@@ -613,7 +617,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         init_level = level / (float)scale;
         init_level=init_level*100;
-        Log.d("final", String.valueOf(init_level));
+        //Log.d("final", String.valueOf(init_level));
         // ------------ //
 
 
@@ -1385,7 +1389,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
             int power_consumed = Math.round(init_level-final_level);
-            Toast.makeText(this,String.valueOf(power_consumed),Toast.LENGTH_SHORT).show();
+           // Toast.makeText(this,String.valueOf(power_consumed),Toast.LENGTH_SHORT).show();
             if(power_consumed<0) power_consumed = 0;
 
             File file = new File(getExternalFilesDir(null).toString());
