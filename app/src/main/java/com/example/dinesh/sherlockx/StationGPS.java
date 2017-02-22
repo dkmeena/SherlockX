@@ -3,7 +3,7 @@ package com.example.dinesh.sherlockx;
 /**
  * Created by dinesh on 22/9/16.
  */
-public class NextNotification {
+public class StationGPS {
 
     Double stationgps[]={
             19.128257, 72.928069,
